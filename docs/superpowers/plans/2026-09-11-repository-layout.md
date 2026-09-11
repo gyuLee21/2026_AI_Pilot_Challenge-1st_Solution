@@ -56,4 +56,14 @@ Files: `README.md`, `docs/STRUCTURE.md`, `docs/CONTRIBUTING.md`, `tests/test_sto
 - [x] Test Git ignore behavior using representative .pt, DLL, external source, and local catalog paths.
 - [x] Run `python -m unittest discover -s tests`, `python -m unittest discover -s evaluation`, and `python -m cuda_fdm.tests.vnext_cpu_suite`.
 - [x] Compare active league manifest/evaluator hashes, check progress, and self-review the diff without subagents.
-- [ ] Commit layout changes by purpose, push only to the existing `leeai021213-afk/aipilot-rl` origin, and report branch and commit hashes. Never force push.
+- [x] Commit layout changes by purpose, push only to the existing `leeai021213-afk/aipilot-rl` origin, and report branch and commit hashes. Never force push.
+
+## Completion evidence
+
+- 2026-09-11: 111 training/league, 5 evaluation and 6 storage/launcher tests passed.
+- Both categorized 31-model local evaluation manifests passed validation.
+- Active evaluator, adapter, search evaluator and environment hashes were unchanged.
+- Copies of 58 RL models and six BT packages passed per-file SHA256 comparison;
+  the stored ROM NMPC snapshot has 416 verified files. Source paths remain intact.
+- Pushed `refactor/model-storage-layout` without merging main or rewriting history.
+  GitHub redirected the existing origin to `https://github.com/gyuLee21/aipilot-rl.git`.
