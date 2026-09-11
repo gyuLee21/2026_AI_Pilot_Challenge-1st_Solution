@@ -35,6 +35,41 @@ def snapshot(tr):
 
 
 class MainScheduleTests(unittest.TestCase):
+    def test_finish_retune_requires_approval_and_preserves_weights(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            original = fixture(sched_period=3000, sched_rollout_cap=64)
+            self.apply(original, 34000)
+            original.iteration = original._committed_iteration = 34000
+            original._iteration_inflight = False
+            path = Path(tmp) / 'checkpoint.pt'
+            original.save(path)
+            restored = fixture(sched_period=3000, sched_rollout_cap=64, main_finish_iteration=35000)
+            with self.assertRaisesRegex(ValueError, 'main schedule'):
+                restored.load(path)
+            restored.load(path, allow_schedule_change=True)
+            for name, value in original.model.state_dict().items():
+                torch.testing.assert_close(value, restored.model.state_dict()[name], rtol=0, atol=0)
+            self.apply(restored, 34001)
+            self.assertEqual(snapshot(restored)[:4], (5e-5, 5e-5, 1e-4, 64))
+            self.apply(restored, 35000)
+            self.assertEqual(snapshot(restored)[:4], (3e-5, 5e-5, 5e-5, 96))
+
+    def test_finish_boundary_and_fresh_resume(self):
+        settings = dict(sched_period=3000, sched_rollout_cap=64,
+                        main_finish_iteration=35000)
+        tr = fixture(**settings)
+        for iteration in (34999, 35000, 35001, 36001, 40000):
+            self.apply(tr, iteration)
+            expected = ((5e-5, 5e-5, 1e-4, 64) if iteration < 35000
+                        else (3e-5, 5e-5, 5e-5, 96))
+            self.assertEqual(snapshot(tr)[:4], expected)
+            self.assertEqual(snapshot(tr)[4], 0.)
+            fresh = fixture(**settings)
+            self.apply(fresh, iteration)
+            self.assertEqual(snapshot(fresh), snapshot(tr))
+            self.assertEqual(fresh._schedule_contract(), tr._schedule_contract())
+        self.assertEqual(tr._schedule_contract()['main_finish']['iteration'], 35000)
+
     @classmethod
     def setUpClass(cls):
         torch.set_num_threads(1)
@@ -140,9 +175,10 @@ class MainScheduleTests(unittest.TestCase):
 
     def test_real_checkpoint_resume_across_decay_and_floor_boundaries(self):
         with tempfile.TemporaryDirectory(prefix="main-schedule-resume-") as tmp:
-            for saved_it in (2000, 6000, 8000, 18000, 19999):
+            for saved_it in (2000, 6000, 8000, 18000, 19999, 34999, 35000, 37000):
                 with self.subTest(saved_it=saved_it):
-                    tr = fixture()
+                    settings = dict(main_finish_iteration=35000, sched_rollout_cap=64) if saved_it >= 34999 else {}
+                    tr = fixture(**settings)
                     for optimizer, parameters in ((tr.actor_opt, tr.model.actor_parameters()),
                                                    (tr.critic_opt, tr.model.critic_parameters())):
                         optimizer.zero_grad(set_to_none=True)
@@ -154,7 +190,7 @@ class MainScheduleTests(unittest.TestCase):
                     tr._iteration_inflight = False
                     path = Path(tmp) / f"iter{saved_it}.pt"
                     tr.save(path)
-                    restored = fixture()
+                    restored = fixture(**settings)
                     ckpt = restored.load(path)
                     self.assertEqual(ckpt["main_schedule"]["base"]["ent"], .001)
                     self.assertEqual(ckpt["main_schedule"]["base"]["rollout"], 64)

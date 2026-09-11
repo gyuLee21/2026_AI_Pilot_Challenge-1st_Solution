@@ -161,8 +161,6 @@ def validate_finish_plan(config, milestone_period):
         raise ValueError("invalid finishing learning-rate/entropy endpoints")
     if not 16 < plan["archive_audit_cap"] <= 128:
         raise ValueError("finishing archive audit cap must be in (16,128]")
-    if plan.get("archive_audit_paired_blocks", 64) not in (64, 128, 256):
-        raise ValueError("finishing archive audit paired blocks must be 64, 128, or 256")
     for iteration, profile in plan["side_profiles"].items():
         if (profile not in ("altitude_hunt", "standard", "attack")
                 or not start < int(iteration) <= plan["decay_start"]
@@ -498,13 +496,6 @@ class TrainingStopController:
         if iteration != self.config["normal_end"]:
             raise ValueError("finishing restart point must be at the configured boundary")
         destination = self.root.parent / "restart_points" / f"iter_{iteration}"
-        # Content-addressed policy names exceed Windows MAX_PATH once nested
-        # below the protected restart directory. Use the extended local path
-        # for every stat/read/copy operation, not only mkdir.
-        if os.name == "nt":
-            resolved = str(destination.resolve())
-            if not resolved.startswith("\\\\?\\"):
-                destination = Path("\\\\?\\" + resolved)
         manifest_path = destination / "manifest.json"
         if manifest_path.exists():
             manifest = json.loads(manifest_path.read_text(encoding="utf-8"))

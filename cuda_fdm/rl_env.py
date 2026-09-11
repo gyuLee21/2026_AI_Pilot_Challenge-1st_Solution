@@ -190,7 +190,7 @@ class GpuDogfightVecEnv:
     def __init__(self, nenv, substeps=6, precision="fp64", block=128, seed=None,
                  device="cuda", min_altitude_m=HARD_DECK_M, max_engage_time_s=200.0,
                  reward_cfg=None, reward_mode=0, alt_hunt_coef=5.0,
-                 scenario="mixed"):
+                 scenario="mixed", headon_distance_m=5539.0):
         if precision != "fp64":
             raise ValueError(
                 "GpuDogfightVecEnv supports precision='fp64' only: fused observation/reward "
@@ -211,7 +211,9 @@ class GpuDogfightVecEnv:
         self.alt_ft_range = (2000.0, 30000.0)
         self.speed_mps_range = (200.0, 300.0)
         self.distA_ft_choices = (2000.0, 2500.0, 3000.0)
-        self.dist_headon_ft = 10000.0
+        if not math.isfinite(headon_distance_m) or headon_distance_m <= 0:
+            raise ValueError("head-on distance must be positive and finite")
+        self.dist_headon_ft = float(headon_distance_m) / FT2M
         # 시나리오 B(head-on 마주봄) : A(3-9, 수직·반대). "mixed" 는 대회 옛
         # 규정의 1:3(B 확률 0.25), "three_nine"/"headon" 은 새 규정의 단일
         # 초기조건 전용 모델용으로 한쪽만 뽑는다.
@@ -329,6 +331,7 @@ class GpuDogfightVecEnv:
         self._evaluation_seed_metadata = {
             "paired": paired, "seed_block": int(seed_block),
             "scenario": self.scenario,
+            "headon_distance_m": self.dist_headon_ft * FT2M,
             "base_count": int(base_count), "three_nine": int(base_count - headon),
             "headon": int(headon), "three_nine_distance_counts": distance_counts,
         }
@@ -336,7 +339,7 @@ class GpuDogfightVecEnv:
 
     def reset_evaluation(self, *, paired=False, seed_block=0):
         """Reset to a deterministic stratified bank with no random warm-up."""
-        key = (bool(paired), int(seed_block))
+        key = (bool(paired), int(seed_block), self.scenario, self.dist_headon_ft)
         if self._evaluation_seed_bank is None or self._evaluation_seed_bank_key != key:
             self._evaluation_seed_bank = self._build_evaluation_seed_bank(
                 paired=paired, seed_block=seed_block)

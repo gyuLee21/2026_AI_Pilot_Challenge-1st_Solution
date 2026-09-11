@@ -49,6 +49,8 @@ def validate_log_schema(path, aux_pred):
 
 def _main(leases):
     ap = argparse.ArgumentParser()
+    ap.add_argument("--scheduled-legacy-import", default="",
+                    help="Optional one-shot external challenger batch manifest")
     ap.add_argument("--nenv", type=int, default=4096)
     ap.add_argument("--iters", type=int, default=20000, help="총 main iteration(별도 exploiter iteration 제외)")
     ap.add_argument("--rollout", type=int, default=64, help="iteration 당 env step 수 T")
@@ -102,6 +104,11 @@ def _main(leases):
     ap.add_argument("--sched-rollout-increment", type=int, default=8, help="단계마다 rollout 에 더할 값")
     ap.add_argument("--sched-rollout-cap", type=int, default=0,
                     help="schedule rollout 상한(0이면 legacy 무제한 증가)")
+    ap.add_argument("--main-finish-iteration", type=int, default=0)
+    ap.add_argument("--main-finish-rollout", type=int, default=96)
+    ap.add_argument("--main-finish-actor-lr", type=float, default=3e-5)
+    ap.add_argument("--main-finish-critic-lr", type=float, default=5e-5)
+    ap.add_argument("--main-finish-entropy", type=float, default=5e-5)
     # ── opponent pool / gated self-play (원본과 동일 규약) ──
     ap.add_argument("--pool-evict-cap", type=int, default=4,
                     help="evictable(net) opponent snapshot 최대 수")
@@ -131,6 +138,8 @@ def _main(leases):
     ap.add_argument("--league-admission-lcb", type=float, default=0.60)
     ap.add_argument("--league-redteam-period", type=int, default=1000)
     ap.add_argument("--league-altitude-redteam-threshold", type=float, default=0.10)
+    ap.add_argument("--league-altitude-hunter", action=argparse.BooleanOptionalAction, default=True,
+                    help="Enable altitude-hunt side learners, including guaranteed league sentinels")
     # ── isolated 100K+ control plane (legacy default is byte-for-byte behaviour) ──
     ap.add_argument("--vnext-mode", choices=("staged",), default="staged")
     ap.add_argument("--vnext-stage", type=int, default=1)
@@ -171,6 +180,8 @@ def _main(leases):
                     choices=("three_nine", "headon", "mixed"),
                     help="초기조건 고정: 3-9 전용 / head-on 전용 / 기존 혼합")
     ap.add_argument("--seed", type=int, default=0)
+    ap.add_argument("--headon-distance-m", type=float, default=5539.0,
+                    help="Head-on initial separation in metres (server distance)")
     ap.add_argument("--device", type=str, default="cuda")
     ap.add_argument("--save", type=str, default=None, help="체크포인트 경로(.pt)")
     ap.add_argument("--save-every", type=int, default=100, help="N iteration 마다 저장")
@@ -182,6 +193,8 @@ def _main(leases):
               "probationary로 재등록한 후 기존 payoff/Nash/forced-Challenger "
               "activation transaction으로 한 번 투입"))
     ap.add_argument("--damage-scale", type=float, default=10.0)
+    ap.add_argument("--headon-damage-schedule", action="store_true",
+                    help="Headon only: damage scale 10 before iteration 20000, then 2")
     ap.add_argument("--altitude-settlement-scale", type=float, default=10.0,
                     help="remaining-HP altitude settlement, independent of damage shaping")
     ap.add_argument("--timeout-draw-reward", type=float, default=-4.0)
@@ -208,8 +221,16 @@ def _main(leases):
     ap.add_argument("--wandb-run-id", default="", help="coordinator가 승인한 고정 W&B run id")
     ap.add_argument("--wandb-group", default="")
     args = ap.parse_args()
+    if args.headon_damage_schedule and (args.scenario != "headon" or args.damage_scale != 10.0):
+        raise ValueError("headon damage schedule requires headon and initial damage-scale 10")
     stop_config = (json.loads(Path(args.training_stop_config).read_text(encoding="utf-8"))
                    if args.training_stop_config else None)
+    legacy_plan = None
+    if args.scheduled_legacy_import:
+        from cuda_fdm.scheduled_legacy_import import load_plan
+        legacy_plan = load_plan(args.scheduled_legacy_import)
+        if args.scenario != "headon" or not args.save or not args.active_league:
+            raise ValueError("legacy batch requires headon, active league, and checkpoint output")
     if args.evaluate_stop_baseline_only and stop_config is None:
         raise ValueError("--evaluate-stop-baseline-only requires --training-stop-config")
     if args.iters < 1:
@@ -238,6 +259,7 @@ def _main(leases):
 
     torch.zeros(1, device=args.device)   # CUDA 워밍업
     cfg = PPOGPUConfig(
+        headon_damage_schedule=args.headon_damage_schedule,
         total_iterations=args.iters, rollout_steps=args.rollout,
         gamma=args.gamma, gae_lambda=args.gae_lambda, clip_coef=args.clip,
         update_epochs=args.epochs, num_minibatches=args.minibatches,
@@ -249,6 +271,11 @@ def _main(leases):
         sched_ent_decay=args.sched_ent_decay, sched_rollout_increment=args.sched_rollout_increment,
         sched_lr_floor=args.sched_lr_floor, sched_ent_floor=args.sched_ent_floor,
         sched_rollout_cap=args.sched_rollout_cap,
+        main_finish_iteration=args.main_finish_iteration,
+        main_finish_rollout=args.main_finish_rollout,
+        main_finish_actor_lr=args.main_finish_actor_lr,
+        main_finish_critic_lr=args.main_finish_critic_lr,
+        main_finish_entropy=args.main_finish_entropy,
         pool_evict_cap=args.pool_evict_cap, selfplay_gate_threshold=args.selfplay_gate_threshold,
         selfplay_ema_alpha=args.selfplay_ema_alpha, pool_sample_temp=args.pool_sample_temp,
         pool_uniform_floor=args.pool_uniform_floor,
@@ -268,6 +295,7 @@ def _main(leases):
         league_admission_lcb=args.league_admission_lcb,
         league_redteam_period=args.league_redteam_period,
         league_altitude_redteam_threshold=args.league_altitude_redteam_threshold,
+        league_altitude_hunter=args.league_altitude_hunter,
         exploiter_iters=args.exploiter_iters, exploiter_win_target=args.exploiter_win_target,
         exploiter_alternate_altitude_hunt=args.exploiter_alternate_altitude_hunt,
         exploiter_alt_hunt_coef=args.exploiter_alt_hunt_coef,
@@ -283,7 +311,8 @@ def _main(leases):
     resume_checkpoint = None
     try:
         env = GpuDogfightVecEnv(args.nenv, substeps=args.substeps, seed=args.seed,
-                                device=args.device, scenario=args.scenario)
+                                device=args.device, scenario=args.scenario,
+                                headon_distance_m=args.headon_distance_m)
         env.reward_cfg.update(damage_scale=args.damage_scale,
                               altitude_settlement_scale=args.altitude_settlement_scale,
                               altitude_terminal_mode=args.altitude_terminal_mode,
@@ -298,6 +327,7 @@ def _main(leases):
             _prob_text = repr(_prob)
         print(f"[gpu-ppo] initial-condition scenario={_scenario} "
               f"(head-on probability {_prob_text}); "
+              f"headon_distance_m={args.headon_distance_m}; "
               "league evaluation bank is locked to the same scenario", flush=True)
         trainer = PPOGPUTrainer(env, cfg)
         print(f"[reward] training objective={trainer._training_objective()}", flush=True)
@@ -355,6 +385,9 @@ def _main(leases):
                            soft_budget=int(args.vnext_strategic_budget))
     payoff_config = replace(PayoffGraphConfig(),
                             query_budget_per_milestone=int(args.vnext_query_budget))
+    if args.scenario == "headon":
+        from .headon_distance_change import distance_payoff_config
+        payoff_config = distance_payoff_config(payoff_config,args.headon_distance_m)
     vnext_config = VNextConfig(
         mode=VNextMode(args.vnext_mode), stage=VNextStage(args.vnext_stage),
         source_iteration=0, target_iteration=int(args.iters), strategic_index=index_config,
@@ -394,6 +427,15 @@ def _main(leases):
     print(f"[gpu-ppo] vNext {args.vnext_mode} control enabled at stage "
           f"{args.vnext_stage}; live_adapter="
           f"{trainer.vnext_milestone_adapter is not None}", flush=True)
+
+    from .headon_distance_change import finish_pending_rebaseline
+    finish_pending_rebaseline(trainer,args.save)
+
+    from .warm_start import finish_pending
+    finish_pending(trainer,args.save)
+
+    from .legacy_league import finish_pending as finish_legacy_league
+    finish_legacy_league(trainer,args.save,(resume_checkpoint or {}).get('legacy_league_transition'))
 
     # Explicit operator-directed safety recovery. This is an opt-in,
     # resume-only operation: it does not weaken the normal UCB gate or turn a
@@ -504,6 +546,9 @@ def _main(leases):
                             name=run_name, id=run_id,
                             resume="allow", config=vars(args), group=args.wandb_group or None)
             wb.config.update({"gamma": args.gamma, "damage_scale": args.damage_scale,
+                              "headon_distance_m": args.headon_distance_m,
+                              "headon_distance_transition": getattr(trainer,"headon_distance_transition",None),
+                              "legacy_league_transition": getattr(trainer,"legacy_league_transition",None),
                               "timeout_draw_reward": args.timeout_draw_reward,
                               "altitude_settlement_scale": args.altitude_settlement_scale,
                               "altitude_terminal_mode": args.altitude_terminal_mode,
@@ -545,6 +590,12 @@ def _main(leases):
 
     print(f"[gpu-ppo] future-position auxiliary={'ON' if args.aux_pred else 'OFF'}"
           f" coef={args.aux_coef:g}; observations=214, control=10Hz", flush=True)
+
+    # Resume may already be exactly at the approved import boundary.
+    # Complete the existing transaction before collecting the next rollout.
+    if legacy_plan is not None and resume_checkpoint is not None:
+        from cuda_fdm.scheduled_legacy_import import apply_if_due
+        apply_if_due(trainer, legacy_plan, args.save)
 
     def on_iter(s):
         require_finite_training_stats(s)
@@ -625,6 +676,7 @@ def _main(leases):
                 for i, ema in enumerate(s.extra.get("perm_slot_emas", [])):
                     logd[f"pool_ema/perm_slot{i}"] = ema
                 logd["iteration"] = s.iteration   # x축(step= 대신 step_metric 사용)
+                logd["reward/damage_scale"] = float(env.reward_cfg["damage_scale"])
                 wb.log(logd)
             except Exception as e:
                 print(f"[gpu-ppo] wandb.log 실패({e})", flush=True)
@@ -679,6 +731,9 @@ def _main(leases):
                                 "perf/eta_seconds": budget_report['rolling_eta_seconds']})
                     except Exception as exc:
                         print(f"[budget] W&B ETA log failed: {exc}", flush=True)
+        if legacy_plan is not None:
+            from cuda_fdm.scheduled_legacy_import import apply_if_due
+            apply_if_due(trainer, legacy_plan, args.save)
         if args.save and (s.iteration % args.save_every == 0 or s.iteration in keep_iterations):
             if not all(bool(torch.isfinite(p).all()) for p in trainer.model.parameters()):
                 raise FloatingPointError(f"non-finite parameters at iteration {s.iteration}")

@@ -132,11 +132,7 @@ EXPLOITER_CURRICULUM_BAND_HIGH = 0.30  # wr_ema >= this: never curriculum (p=0)
 # exposed and evicted by exactly the same Nash machinery as every other
 # challenger, so Main outgrowing it removes it on its own.
 ALTITUDE_SENTINEL_PERIOD = 5000
-ALTITUDE_SENTINEL_OFFSET = 1000
-# Preserve the schedule already consumed by the live run (1k, 6k, ..., 36k).
-# From the next sentinel onward, align hunters to round 5k boundaries so the
-# post-36k sequence is 40k, 45k, 50k, ... as configured for this curriculum.
-ALTITUDE_SENTINEL_LEGACY_THROUGH = 36000
+# Head-on has no inherited 3-9 1k/6k offset: use round 5k slots from the start.
 # altitude_hunt now has its own guaranteed schedule above, so the ordinary
 # milestone bandit must stop spending its turns on it: drawing it here would
 # duplicate the sentinel while starving the profiles that only ever appear on
@@ -145,9 +141,9 @@ ALTITUDE_SENTINEL_LEGACY_THROUGH = 36000
 # only the *draw* is restricted.
 SCHEDULED_EXPLOITER_PROFILES = tuple(
     name for name in EXPLOITER_PROFILES
-    # User decision, 2026-09-05: retain defense checkpoints/statistics, but
-    # never start another defense side learner. Sentinel remains independent.
-    if name not in {"altitude_hunt", "defense"})
+    # Head-on user decision 2026-09-09: standard/attack/defense are selectable.
+    # Hunter stays exclusive to the guaranteed 5k sentinel slot.
+    if name != "altitude_hunt")
 ACTION_BINS = 21   # 원본 train.py --action-bins 기본값과 동일(채널당 21 균등격자).
 LEGACY_TRAINING_PROTOCOL = "cuda_mlp_flat_finite_horizon_diverse_h3_reset_v7"
 TRAINING_PROTOCOL = "cuda_mlp_flat_finite_horizon_active_league_v15_posterior_nash"
@@ -972,6 +968,11 @@ class PPOGPUConfig:
     sched_ent_floor: float = 0.0
     sched_rollout_increment: int = 8
     sched_rollout_cap: int = 0
+    main_finish_iteration: int = 0
+    main_finish_rollout: int = 96
+    main_finish_actor_lr: float = 3e-5
+    main_finish_critic_lr: float = 5e-5
+    main_finish_entropy: float = 5e-5
     sched_shaping_ladder: tuple = (1.0, 0.6, 0.32, 0.12, 0.0)
     # ── opponent pool / gated self-play (원본과 동일 규약) ──────────────────────
     pool_evict_cap: int = 4               # evictable(net) snapshot 최대 수
@@ -997,6 +998,8 @@ class PPOGPUConfig:
     league_payoff_refresh_period: int = 500
     league_redteam_period: int = 1000
     league_altitude_redteam_threshold: float = 0.10
+    league_altitude_hunter: bool = True
+    headon_damage_schedule: bool = False
     # P1 fix (audit 2026-09-02, A4 applied to the non-staged/shadow fallback):
     # _refresh_payoff_row() used to sweep every payoff-eligible strategic id,
     # so a milestone's payoff-refresh cost grew without bound as the archive
@@ -1020,6 +1023,14 @@ class PPOGPUConfig:
     exploiter_clip_coef: float = 0.4
 
     def __post_init__(self):
+        if self.main_finish_iteration < 0:
+            raise ValueError("main_finish_iteration must be non-negative")
+        if self.main_finish_iteration:
+            if self.sched_period <= 0 or self.main_finish_rollout <= 0:
+                raise ValueError("main finish requires enabled schedule and positive rollout")
+            if not all(math.isfinite(v) and v > 0 for v in (
+                    self.main_finish_actor_lr, self.main_finish_critic_lr, self.main_finish_entropy)):
+                raise ValueError("main finish rates must be finite and positive")
         if self.exploiter_period < 0 or (self.exploiter_period > 0 and (
                 self.milestone_period <= 0 or self.exploiter_period % self.milestone_period != 0)):
             raise ValueError("exploiter_period must be 0 or a positive multiple of milestone_period")
@@ -1212,7 +1223,14 @@ class PPOGPUTrainer:
                 "entropy_floor": float(self.cfg.sched_ent_floor),
                 "rollout_increment": int(self.cfg.sched_rollout_increment),
                 "rollout_cap": int(self.cfg.sched_rollout_cap),
-                "shaping_ladder": list(self.cfg.sched_shaping_ladder or (1.0,))}
+                "shaping_ladder": list(self.cfg.sched_shaping_ladder or (1.0,)),
+                **({"main_finish": {
+                    "iteration": self.cfg.main_finish_iteration,
+                    "rollout": self.cfg.main_finish_rollout,
+                    "actor_lr": self.cfg.main_finish_actor_lr,
+                    "critic_lr": self.cfg.main_finish_critic_lr,
+                    "entropy": self.cfg.main_finish_entropy,
+                }} if self.cfg.main_finish_iteration else {})}
 
     def _league_contract(self):
         if not self.cfg.league_enabled:
@@ -1266,6 +1284,11 @@ class PPOGPUTrainer:
                                 b["ent"] * (float(self.cfg.sched_ent_decay) ** k))
         actor_lr = max(float(self.cfg.sched_lr_floor), b["actor_lr"] * lr_factor)
         critic_lr = max(float(self.cfg.sched_lr_floor), b["critic_lr"] * lr_factor)
+        finishing = self.cfg.main_finish_iteration > 0 and int(it) >= self.cfg.main_finish_iteration
+        if finishing:
+            actor_lr = self.cfg.main_finish_actor_lr
+            critic_lr = self.cfg.main_finish_critic_lr
+            self.cfg.ent_coef = self.cfg.main_finish_entropy
         for g in self.actor_opt.param_groups:
             g["lr"] = actor_lr
         for g in self.critic_opt.param_groups:
@@ -1273,6 +1296,8 @@ class PPOGPUTrainer:
         new_T = b["rollout"] + int(self.cfg.sched_rollout_increment) * k
         if int(self.cfg.sched_rollout_cap) > 0:
             new_T = min(new_T, int(self.cfg.sched_rollout_cap))
+        if finishing:
+            new_T = self.cfg.main_finish_rollout
         if new_T != int(self.cfg.rollout_steps):
             self.cfg.rollout_steps = new_T
             self._alloc_rollout_buffers(new_T)
@@ -1280,8 +1305,9 @@ class PPOGPUTrainer:
         shaping_mult = float(shaping_ladder[min(k, len(shaping_ladder) - 1)])
         self.env.reward_cfg["shaping_reward_scale"] = b["shaping"] * shaping_mult
         self.env.reward_cfg["own_damage_weight"] = 1.0
-        if k != self._sched_phase:
-            self._sched_phase = k
+        phase = (k, finishing)
+        if phase != self._sched_phase:
+            self._sched_phase = phase
             print(f"[gpu-ppo] 스케줄 단계 k={k} (iter {it}): rollout={self.cfg.rollout_steps}, "
                   f"lr={actor_lr:.3e}, critic_lr={critic_lr:.3e}, ent_coef={self.cfg.ent_coef:.3e}, "
                   f"gamma={self.cfg.gamma:.4f}, shaping_mult={shaping_mult}", flush=True)
@@ -1395,7 +1421,8 @@ class PPOGPUTrainer:
                 # this unset silently evaluated a scenario-locked run's
                 # admission decisions on the old 3:1 mixed distribution
                 # instead of its own training scenario.
-                scenario=str(getattr(self.env, "scenario", "mixed")))
+                scenario=str(getattr(self.env, "scenario", "mixed")),
+                headon_distance_m=float(self.env.dist_headon_ft) * 0.3048)
             # Completed lanes autoreset internally but are never counted twice.
             # A small pool avoids needless evaluator-only seed construction.
             evaluator.ic_pool_size = min(128, total_games)
@@ -2230,9 +2257,7 @@ class PPOGPUTrainer:
         names = SCHEDULED_EXPLOITER_PROFILES
         if self.archive is None:
             mode = scheduled_exploiter_mode(getattr(self, "iteration", 0), self.cfg.milestone_period,
-                                            self.cfg.exploiter_alternate_altitude_hunt)
-            if mode == DEFENSE_REWARD:
-                mode = STANDARD_REWARD
+                                            self.cfg.exploiter_alternate_altitude_hunt and self.cfg.league_altitude_hunter)
             return reward_mode_name(mode), mode
         stats = self._profile_bandit[role]
         # In staged vnext mode, admission is deferred to the payoff graph, so
@@ -2330,11 +2355,7 @@ class PPOGPUTrainer:
     @staticmethod
     def _is_altitude_sentinel_milestone(iteration: int) -> bool:
         iteration = int(iteration)
-        if iteration < ALTITUDE_SENTINEL_OFFSET:
-            return False
-        if iteration <= ALTITUDE_SENTINEL_LEGACY_THROUGH:
-            return (iteration - ALTITUDE_SENTINEL_OFFSET) % ALTITUDE_SENTINEL_PERIOD == 0
-        return iteration % ALTITUDE_SENTINEL_PERIOD == 0
+        return iteration > 0 and iteration % ALTITUDE_SENTINEL_PERIOD == 0
 
     def _evaluate_and_admit_exploiter(self, candidate, target, role, profile, training_ema):
         seed_block = int(getattr(self, "iteration", 0))
@@ -2463,6 +2484,26 @@ class PPOGPUTrainer:
         self._update_profile_stat(role, profile, utility)
         return accepted, archive_id, metrics
 
+    def _scheduled_side_profile(self, role, iteration_now):
+        """Resolve one side profile; disabling hunters also disables direct-entry sentinels."""
+        profile, mode = self._select_exploiter_profile(role)
+        sentinel = (self.cfg.league_altitude_hunter
+                    and self._is_altitude_sentinel_milestone(iteration_now))
+        if sentinel:
+            role, profile, mode = "ME-ERE", "altitude_hunt", ALTITUDE_HUNT_REWARD
+        from .training_stop import finishing_profile
+        forced = finishing_profile(getattr(self, "training_stop_state", None) or {}, iteration_now)
+        if forced is not None:
+            profile = forced
+            mode = {"altitude_hunt": ALTITUDE_HUNT_REWARD,
+                    "standard": STANDARD_REWARD, "attack": ATTACK_REWARD}[profile]
+            sentinel = profile == "altitude_hunt"
+            if sentinel:
+                role = "ME-ERE"
+        if not self.cfg.league_altitude_hunter and profile == "altitude_hunt":
+            raise ValueError("altitude hunter disabled but requested by side profile configuration")
+        return role, profile, mode, sentinel
+
     # ── exploiter 학습: ME-EIE / LE / ME-ERE with frozen admission ────────────
     def train_exploiter(self, log=None, metric_cb=None):
         """Train a side learner without discarding the main's ongoing games.
@@ -2483,20 +2524,8 @@ class PPOGPUTrainer:
         base_mode = getattr(self.env, "reward_mode", STANDARD_REWARD)
         base_hunt_coef = getattr(self.env, "alt_hunt_coef", 5.0)
         role = self._exploiter_role()
-        profile, mode = self._select_exploiter_profile(role)
         iteration_now = getattr(self, "iteration", 0)
-        self._altitude_sentinel_pending = self._is_altitude_sentinel_milestone(iteration_now)
-        if self._altitude_sentinel_pending:
-            role, profile, mode = "ME-ERE", "altitude_hunt", ALTITUDE_HUNT_REWARD
-        from .training_stop import finishing_profile
-        forced_profile = finishing_profile(getattr(self, "training_stop_state", None) or {}, iteration_now)
-        if forced_profile is not None:
-            profile = forced_profile
-            mode = {"altitude_hunt": ALTITUDE_HUNT_REWARD,
-                    "standard": STANDARD_REWARD, "attack": ATTACK_REWARD}[profile]
-            self._altitude_sentinel_pending = profile == "altitude_hunt"
-            if self._altitude_sentinel_pending:
-                role = "ME-ERE"
+        role, profile, mode, self._altitude_sentinel_pending = self._scheduled_side_profile(role, iteration_now)
         target_bundle = self._policy_bundle()
         init_bundle, init_label = self._select_exploiter_init(role, target_bundle)
         try:
@@ -2824,6 +2853,7 @@ class PPOGPUTrainer:
             self._iteration_inflight = True
             self.iteration = it
             self._apply_schedule(it)   # 2000-iter 스케줄: lr·ent_coef 감쇠, rollout 증가
+            self._apply_damage_schedule(it)
             stop_state = getattr(self, "training_stop_state", None) or {}
             if stop_state.get("phase") == "polish":
                 from .training_stop import finishing_value
@@ -3107,6 +3137,10 @@ class PPOGPUTrainer:
                 # evaluation bank.
                 "initial_condition_scenario": str(
                     getattr(self.env, "scenario", "mixed")),
+                "headon_distance_m": float(getattr(self.env, "dist_headon_ft", 10000.)) * 0.3048,
+                "headon_distance_transition": copy.deepcopy(getattr(self, "headon_distance_transition", None)),
+                "warm_start_transition": copy.deepcopy(getattr(self, "warm_start_transition", None)),
+                "legacy_league_transition": copy.deepcopy(getattr(self, "legacy_league_transition", None)),
                 "main_schedule": self._schedule_contract(),
                 "league_contract": self._league_contract(),
                 "league_archive": self.archive.state_dict() if self.archive is not None else None,
@@ -3239,7 +3273,9 @@ class PPOGPUTrainer:
     # Everything else in the contract -- the bases, the period, the rollout
     # ladder, the shaping ladder -- stays hard-refused: those interact with the
     # restored optimizer and rollout buffers.
-    RETUNABLE_SCHEDULE_KEYS = ("lr_decay", "entropy_decay", "lr_floor", "entropy_floor")
+    # Explicit finishing schedules reallocate rollout buffers in _apply_schedule;
+    # model and optimizer tensor shapes are unchanged. Still require opt-in.
+    RETUNABLE_SCHEDULE_KEYS = ("lr_decay", "entropy_decay", "lr_floor", "entropy_floor", "main_finish")
 
     @classmethod
     def _schedule_change_report(cls, saved, current):
@@ -3266,6 +3302,17 @@ class PPOGPUTrainer:
         "own_damage_weight": 1.0, "altitude_settlement_scale": 10.0,
         "altitude_win_reward": 5.0, "altitude_loss_reward": -5.0,
     }
+
+    def _apply_damage_schedule(self, iteration):
+        if not self.cfg.headon_damage_schedule:
+            return
+        if self.env.scenario != "headon":
+            raise ValueError("damage schedule is headon-only")
+        value = 10.0 if int(iteration) < 20000 else 2.0
+        previous = self.env.reward_cfg.get("damage_scale")
+        self.env.reward_cfg["damage_scale"] = value
+        if previous != value:
+            print(f"[reward-schedule] iteration={iteration} damage_scale={previous}->{value}", flush=True)
 
     def _training_objective(self):
         cfg = getattr(self.env, "reward_cfg", {})
@@ -3301,6 +3348,9 @@ class PPOGPUTrainer:
             "reward": dict(self.LEGACY_REWARD_PARAMETERS),
             "altitude_terminal_mode": "remaining_hp",
         })
+        if bool(ckpt.get("cfg", {}).get("headon_damage_schedule", False)) != self.cfg.headon_damage_schedule:
+            raise ValueError("headon damage schedule differs from checkpoint")
+        self._apply_damage_schedule(int(ckpt.get("iteration", 0)))
         current_objective = self._training_objective()
         self.training_objective_history = copy.deepcopy(ckpt.get("training_objective_history", []))
         if saved_objective != current_objective:
@@ -3338,6 +3388,11 @@ class PPOGPUTrainer:
             raise ValueError("checkpoint reward contract differs; implicit migration refused")
         saved_scenario = ckpt.get("initial_condition_scenario")
         current_scenario = str(getattr(self.env, "scenario", "mixed"))
+        if current_scenario == "headon":
+            from .headon_distance_change import validate_distance
+            validate_distance(ckpt, float(self.env.dist_headon_ft) * 0.3048)
+        self.headon_distance_transition = copy.deepcopy(ckpt.get("headon_distance_transition"))
+        self.warm_start_transition = copy.deepcopy(ckpt.get("warm_start_transition"))
         if saved_scenario is not None and saved_scenario != current_scenario:
             raise ValueError(
                 f"checkpoint was trained on the {saved_scenario!r} initial "

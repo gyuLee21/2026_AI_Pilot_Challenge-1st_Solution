@@ -48,12 +48,9 @@ STALE_MEMBER_MAIN_WINRATE = 0.90
 # Never judge on a thin sample: a freshly seated member starts at ema 0.5 and
 # needs real exposure before its number means anything.
 STALE_MEMBER_MIN_GAMES = 2000
-# 2026-09-04: raised 1 -> 2. Live showed solved members queuing faster than
-# eviction drains: most-solved-first ordering is right, but with challengers
-# solved in ~500 iters each, one seat per 500-iter milestone lets 0.95+
-# members (e.g. 56k-game 0.977) linger and dilute the hard channel with easy
-# games. Two still drains gradually; promotion stays at one.
-STALE_MEMBER_EVICTIONS_PER_MILESTONE = 2
+# 2026-09-10: graduate every qualified strategic member at the next
+# milestone. An underfilled pool is preferable to retaining solved opponents.
+# Admission, historical recovery and payoff-completion budgets are unchanged.
 
 
 def _seed_integer(text: str) -> int:
@@ -586,8 +583,6 @@ class VNextMilestoneAdapter:
         stop_state = getattr(trainer, "training_stop_state", None) or {}
         finish_plan = stop_state.get("config", {}).get("finish_plan", {})
         expanded = stop_state.get("phase") == "polish" and bool(finish_plan)
-        audit_blocks = max(config.payoff_graph.solver_paired_blocks,
-                           int(finish_plan.get("archive_audit_paired_blocks", 64))) if expanded else config.payoff_graph.solver_paired_blocks
         audit_config = config.active_game
         if expanded:
             # Pure oldest-first selection gives every valid archived policy a
@@ -629,17 +624,16 @@ class VNextMilestoneAdapter:
                 evaluator_protocol=config.payoff_graph.evaluator_protocol,
                 scenario_bank_versions=(config.payoff_graph.solver_scenario_bank,),
                 iteration=iteration, phases={"solver"})
-            if estimate.paired_blocks < audit_blocks:
+            if estimate.paired_blocks < config.payoff_graph.solver_paired_blocks:
                 left, right = sorted((int(current_id), int(target.archive_id)))
                 query = {
                     "left": left, "right": right,
                     "priority": 0.0,
-                    "reason": (f"historical_{target.reason}" +
-                               (f"_blocks{audit_blocks}" if audit_blocks > config.payoff_graph.solver_paired_blocks else "")),
+                    "reason": f"historical_{target.reason}",
                     "minimum_blocks": max(
-                        1, audit_blocks
+                        1, config.payoff_graph.solver_paired_blocks
                         - estimate.paired_blocks),
-                    "maximum_blocks": max(config.payoff_graph.maximum_paired_blocks, audit_blocks),
+                    "maximum_blocks": config.payoff_graph.maximum_paired_blocks,
                     "phase": "solver",
                     "scenario_bank_version": config.payoff_graph.solver_scenario_bank,
                 }
@@ -647,14 +641,6 @@ class VNextMilestoneAdapter:
                     trainer, query, iteration=iteration,
                     candidate_ids=candidate_ids, current_id=current_id)
                 queries.append(query)
-            if audit_blocks > config.payoff_graph.solver_paired_blocks:
-                verified = self.controller.graph.estimate_solver_slice(
-                    current_id, target.archive_id,
-                    evaluator_protocol=config.payoff_graph.evaluator_protocol,
-                    scenario_bank_versions=(config.payoff_graph.solver_scenario_bank,),
-                    iteration=iteration, phases={"solver"})
-                if verified.paired_blocks < audit_blocks:
-                    raise RuntimeError("finishing archive audit lacks required paired evidence")
             if self._record_historical_audit(
                     trainer, archive_id=target.archive_id,
                     current_id=current_id, iteration=iteration,
@@ -666,7 +652,6 @@ class VNextMilestoneAdapter:
                 "uncovered_after": max(0, uncovered-len(targets)) if uncovered else 0,
                 "selected": len(targets), "queries": len(queries),
                 "reactivated_ids": reactivated, "cap": finish_plan["archive_audit_cap"],
-                "required_paired_blocks": audit_blocks,
                 "mode": "coverage" if uncovered else "risk_and_stale",
             }, iteration=iteration)
         return queries, reactivated
@@ -877,7 +862,7 @@ class VNextMilestoneAdapter:
         # Most thoroughly solved first.
         scored.sort(key=lambda item: (-item[0], item[1]))
         retired_ids = []
-        for main_winrate, identity, _entry in scored[:STALE_MEMBER_EVICTIONS_PER_MILESTONE]:
+        for main_winrate, identity, _entry in scored:
             record = trainer.archive.records.get(identity)
             if record is None:
                 continue
@@ -909,17 +894,27 @@ class VNextMilestoneAdapter:
 
     @staticmethod
     def _rank_incumbent_entries(trainer, entries) -> list[dict]:
-        return sorted(entries, key=lambda entry: (
-            trainer.archive.records[int(entry["archive_id"])].get(
-                "admission_status") == "probationary",
-            float(trainer.archive.records[int(entry["archive_id"])].get(
-                "nash_mass", 0.0))
-            + float(trainer.archive.records[int(entry["archive_id"])].get(
-                "regression", 0.0)),
-            bool(entry.get("coverage", False)),
-            int(trainer.archive.records[int(entry["archive_id"])].get(
-                "iteration", -1)),
-            int(entry["archive_id"])), reverse=True)
+        """Preserve probation, then current difficulty plus strategic support.
+
+        Reuse hard-PFSP's (1 - Main EMA)^2 rather than adding regression to
+        Nash mass: an easy opponent's tiny regression previously dominated
+        a genuinely difficult opponent with a small but useful Nash mass.
+        Regression now breaks primary-score ties only. This ranks membership;
+        role allocation, sampling and forced-admission safety remain separate.
+        """
+        def priority(entry):
+            record = trainer.archive.records[int(entry["archive_id"])]
+            score = float(entry.get("ema", 0.5))
+            mass = float(record.get("nash_mass", 0.0))
+            regression = float(record.get("regression", 0.0))
+            if not all(math.isfinite(value) for value in (score, mass, regression)):
+                raise ValueError("non-finite incumbent priority evidence")
+            difficulty = (1.0 - min(1.0, max(0.0, score))) ** 2
+            return (record.get("admission_status") == "probationary",
+                    max(0.0, mass) + difficulty, max(0.0, regression),
+                    bool(entry.get("coverage", False)),
+                    int(record.get("iteration", -1)), int(entry["archive_id"]))
+        return sorted(entries, key=priority, reverse=True)
 
     def _maybe_run_immediate_confirmatory(self, trainer, query: dict, *,
                                           iteration: int, candidate_ids: set[int],

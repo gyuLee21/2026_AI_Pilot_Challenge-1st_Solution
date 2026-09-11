@@ -133,14 +133,12 @@ class ActiveGameConfig:
     # A challenger must actually be sampled by completed rollout episodes
     # before probation can finish and it can compete for a core seat.
     challenger_min_exposure_games: int = 32
-    # 2026-09-07: double the historical watch set while preserving the former
-    # 1:1:6 risk/staleness ratio. This changes evaluation coverage only; the
-    # active pool (24), strategic solver (20), and admission thresholds remain
-    # untouched. Risk overlap and empty categories backfill from the same
-    # oldest queue.
-    cold_cycle_quota: int = 2
-    cold_regression_quota: int = 2
-    cold_stale_quota: int = 12
+    # Head-on 2026-09-09: eight audits per 500-iter milestone, 1:1:6 ratio.
+    # Active/solver caps and recovery thresholds are unchanged; overlap and
+    # empty categories backfill from the same oldest queue.
+    cold_cycle_quota: int = 1
+    cold_regression_quota: int = 1
+    cold_stale_quota: int = 6
     cold_rotation_quota: int = 0
     # The complete 95% interval must keep current Main at or below this score.
     # 2026-09-04 user decision: raised 0.50 -> 0.65. Waiting until the interval

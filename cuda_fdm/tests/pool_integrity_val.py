@@ -1713,17 +1713,17 @@ class StaleMemberRetirementTest(unittest.TestCase):
         self.assertEqual(retired, [])
         self.assertEqual(len(survivors), 1)
 
-    def test_retirement_is_rate_limited(self):
+    def test_all_qualified_members_graduate_in_one_milestone(self):
         from cuda_fdm.league_vnext.live_adapter import (
-            STALE_MEMBER_EVICTIONS_PER_MILESTONE, STALE_MEMBER_MIN_GAMES)
+            STALE_MEMBER_MIN_GAMES)
         entries = [{"archive_id": identity, "ema": 0.99,
                     "games": STALE_MEMBER_MIN_GAMES}
                   for identity in (5, 11, 17, 29)]
         adapter, trainer, records = self._adapter_and_trainer(entries)
         survivors, retired = adapter._retire_stale_members(
             trainer, entries, iteration=7000)
-        self.assertEqual(len(retired), STALE_MEMBER_EVICTIONS_PER_MILESTONE)
-        self.assertEqual(len(survivors), 4 - STALE_MEMBER_EVICTIONS_PER_MILESTONE)
+        self.assertEqual(len(retired), 4)
+        self.assertEqual(len(survivors), 0)
 
     def test_most_solved_member_goes_first(self):
         from cuda_fdm.league_vnext.live_adapter import STALE_MEMBER_MIN_GAMES
