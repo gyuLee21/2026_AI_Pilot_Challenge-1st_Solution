@@ -1,0 +1,4 @@
+{
+  "description": "Illustrative short run only; not a tuned competition schedule. Select scenario and run name in scripts/train.py.",
+  "arguments": ["--iters", "1000", "--nenv", "4096", "--rollout", "64", "--active-league"]
+}
