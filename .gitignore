@@ -22,3 +22,11 @@ _bin/
 .netrc
 credentials*
 secrets*
+
+# Local model payloads, teammate packages and evaluation outputs.
+/artifacts/*
+!/artifacts/README.md
+/evaluation_results/
+*.local.json
+/evaluation/campaign.*.json
+/evaluation/smoke.*.json

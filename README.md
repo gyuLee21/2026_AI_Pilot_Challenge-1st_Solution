@@ -1,7 +1,21 @@
 # AIPilot RL
 
-현재 3-9 캠페인에서 사용하는 CUDA PPO / active league의 소스 스냅샷입니다.
-원본 학습 디렉터리와 분리해 복사했으며 실행 중인 학습에는 변경을 가하지 않았습니다.
+2026-09-11 완료된 Head-on 런타임의 CUDA PPO / active league 소스입니다.
+3-9와 Head-on을 명시적으로 선택할 수 있으며 원본 학습 디렉터리와 분리되어 있습니다.
+GPU 리그전은 [evaluation/README.md](evaluation/README.md)를 참고하세요.
+
+## 코드·모델 관리
+
+[폴더 구조와 실행법](docs/STRUCTURE.md) · [커밋 규칙](docs/CONTRIBUTING.md)
+
+새 학습은 `python scripts/train.py --scenario headon --run-name NAME --dry-run -- ...`
+으로 경로와 인자를 먼저 확인합니다. `three_nine → artifacts/models/rl/3-9`,
+`headon → headon`, `mixed → common`으로 저장을 분리합니다.
+기존 절대경로 기반 resume 명령은 그대로 유지됩니다.
+
+BT·MPC는 `artifacts/models/bt`, `mpc`, 팀원 패키지는 `external/inbox` 및
+`external/approved`로 분리합니다. 보관만으로 실행되거나 리그전에 자동 추가되지 않습니다.
+가중치와 외부 코드는 Git에 올리지 않습니다.
 
 ## 포함 범위
 
@@ -9,7 +23,7 @@
 - `claude_code/`: 관측·보상 참조 구현, actor/critic 및 관련 코드
 - `src/dogfight/`, `GeoMathUtil.py`: 환경 규약과 기하 계산 지원 코드
 
-가중치, optimizer 상태, archive 정책 파일, W&B 로그·인증정보, 실행 로그 및 학습 데이터는 포함하지 않습니다. 이 저장소만으로 현재 학습을 resume할 수는 없습니다. 준비 중인 별도 head-on 런타임/자동 실행기는 이번 스냅샷에 포함하지 않았습니다.
+가중치, optimizer 상태, archive 정책 파일, W&B 로그·인증정보, 실행 로그 및 학습 데이터는 포함하지 않습니다. 이 저장소만으로 학습을 resume할 수는 없습니다. 별도 실행·재개 설정과 원본 학습 데이터가 필요합니다.
 
 ## 실행 환경
 
@@ -19,7 +33,9 @@
 
 CPU 회귀검증: `python -m cuda_fdm.tests.vnext_cpu_suite`
 
-2026-09-08 복사본에서 CLI import 및 CPU 테스트 109개 통과를 확인했습니다. GPU 학습은 기존 실행과 자원 충돌을 피하기 위해 별도로 시작하지 않았습니다.
+2026-09-11 정리 후 학습·pool 회귀 111개, 평가 5개, 저장 경로·Git 제외 규칙 6개로
+총 122개 테스트가 통과했습니다. 새 학습은 시작하지 않았으며, 진행 중인 분리 리그전의
+실행기·정책 어댑터·GPU 평가 함수·환경 파일 해시가 유지됨을 확인했습니다.
 
 학습 실행에는 목적에 맞는 명시적 CLI 설정이 필요합니다. 기본값이 현재 캠페인 설정과 같다고 가정하지 마세요. W&B 사용 시 각자 자신의 계정으로 로그인해야 합니다.
 
