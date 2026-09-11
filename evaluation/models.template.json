@@ -1,0 +1,7 @@
+{
+  "scenario": "three_nine",
+  "action_mode": "deterministic",
+  "games_per_pair": 50,
+  "seed": 710901,
+  "models": []
+}
