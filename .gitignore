@@ -30,3 +30,23 @@ secrets*
 *.local.json
 /evaluation/campaign.*.json
 /evaluation/smoke.*.json
+
+# Build products and local scratch work.
+build/
+dist/
+temp/
+*.obj
+*.o
+*.lib
+*.exp
+*.pdb
+*.ilk
+*.zip
+*.7z
+*.tar.gz
+*.spec
+.vs/
+.ruff_cache/
+*.vcxproj.user
+/work_*
+/controllers/mpc/release/runtime/
