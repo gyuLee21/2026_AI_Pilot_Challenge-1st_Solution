@@ -48,7 +48,7 @@ def prepare(spec_path, runtime=RUNTIME):
         if not isinstance(name,str) or not name.strip() or name in names:
             raise ValueError('model names must be nonempty and unique')
         kind=model.get('kind','checkpoint')
-        if kind not in ('checkpoint','legacy184_bundle'):
+        if kind not in ('checkpoint','legacy184_bundle','junhwa_actor'):
             raise ValueError(f'{name}: a policy adapter is required for non-checkpoint models')
         path=(spec_path.parent/model['path']).resolve()
         source_hash=sha(path/'policy_weights.pkl.gz') if kind=='legacy184_bundle' else sha(path)
@@ -65,14 +65,27 @@ def prepare(spec_path, runtime=RUNTIME):
                                  metadata_sha256=metadata_hash,legacy_min_altitude_m=legacy_floor,
                                  config_from=str(config_from) if config_from else None,
                                  config_sha256=config_hash))
+        if spec.get('cross_family_only',False):
+            family=model.get('family')
+            if not isinstance(family,str) or not family.strip():
+                raise ValueError('cross-family evaluation requires every model family')
+            participants[-1]['family']=family
     return dict(protocol='scenario_manual_round_robin_v2',scenario=scenario,
                 headon_distance_m=distance,
                 action_mode='deterministic',games_per_pair=games,seed=int(spec.get('seed',710901)),
+                cross_family_only=bool(spec.get('cross_family_only',False)),
                 models=participants,substeps=6,max_engage_time_s=200.,min_altitude_m=304.8,
                 evaluator_sha256=sha(runtime/'cuda_fdm/search_eval.py'),
                 runner_sha256=sha(Path(__file__)),
                 policy_adapter_sha256=sha(Path(__file__).with_name('policy_io.py')),
+                junhwa_adapter_sha256=sha(Path(__file__).with_name('junhwa_policy.py')),
                 environment_sha256=sha(runtime/'cuda_fdm/rl_env.py'))
+
+def selected_pairs(manifest):
+    models=manifest['models']
+    return [(i,j) for i in range(len(models)) for j in range(i+1,len(models))
+            if not manifest.get('cross_family_only',False)
+            or models[i]['family']!=models[j]['family']]
 
 def rank(manifest,pairs):
     n=len(manifest['models'])
@@ -105,9 +118,10 @@ def run_round_robin(manifest,output,pair_evaluator,stop_file=None):
         if json.loads(manifest_path.read_text(encoding='utf-8')) != manifest:
             raise ValueError('existing results belong to a different roster/configuration/code')
     else: save_json(manifest_path,manifest)
-    n=len(manifest['models']); pairs=[]; expected=n*(n-1)//2
+    n=len(manifest['models']); pairs=[]; allowed=set(selected_pairs(manifest)); expected=len(allowed)
     for i in range(n):
         for j in range(i+1,n):
+            if (i,j) not in allowed: continue
             if stop_file and Path(stop_file).exists():
                 raise InterruptedError('stopped at complete-pair boundary; rerun to resume')
             path=output/'pairs'/f'{i:03d}_{j:03d}.json'
@@ -135,6 +149,11 @@ def run_round_robin(manifest,output,pair_evaluator,stop_file=None):
     report=dict(complete=True,rankings=rankings,score_matrix=matrix,
                 total_pairs=expected,total_games=expected*manifest['games_per_pair'],
                 note='Observed average-score ranking over this roster; cyclic matchups and finite-sample uncertainty remain.')
+    if manifest.get('cross_family_only',False):
+        families={m['name']:m['family'] for m in manifest['models']}
+        report['rankings_by_family']={family:[r for r in rankings if families[r['name']]==family]
+                                     for family in sorted(set(families.values()))}
+        report['note']='Compare rankings within each family: families face different opponent sets. Excluded matches are unmeasured, not draws.'
     save_json(output/'report.json',report)
     with (output/'rankings.csv').open('w',newline='',encoding='utf-8-sig') as f:
         writer=csv.DictWriter(f,fieldnames=list(rankings[0])); writer.writeheader(); writer.writerows(rankings)
@@ -152,7 +171,7 @@ def main():
     parser.add_argument('--validate-only',action='store_true'); parser.add_argument('--stop-file')
     args=parser.parse_args(); manifest=prepare(args.spec,args.runtime)
     print(json.dumps({'models':len(manifest['models']),'games_per_pair':manifest['games_per_pair'],
-                      'total_games':len(manifest['models'])*(len(manifest['models'])-1)//2*manifest['games_per_pair']}))
+                      'total_games':len(selected_pairs(manifest))*manifest['games_per_pair']}))
     if args.validate_only: return
     sys.path.insert(0,str(args.runtime))
     import torch
@@ -168,6 +187,10 @@ def main():
     policies=[]
     for index,m in enumerate(manifest['models']):
         path=Path(m['path'])
+        if m['kind']=='junhwa_actor':
+            from junhwa_policy import load_junhwa_policy
+            policies.append(load_junhwa_policy(path,'cuda'))
+            continue
         if m['kind']=='legacy184_bundle':
             policies.append(load_bundle_policy(path,'cuda',m['legacy_min_altitude_m']))
             continue

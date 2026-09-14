@@ -14,6 +14,23 @@ def evaluation(i,j,seed):
                             role_swapped=k>=25) for k in range(50)]}
 
 class TournamentTest(unittest.TestCase):
+    def test_cross_family_has_24_pairs_and_resumes_without_internal_games(self):
+        m=manifest(9); m['cross_family_only']=True
+        for i,model in enumerate(m['models']):
+            model['family']='gylee' if i<4 else 'junhwa' if i<8 else 'baseline'
+        calls=[]
+        def play(i,j,s):
+            self.assertNotEqual(m['models'][i]['family'],m['models'][j]['family'])
+            calls.append((i,j)); return evaluation(i,j,s)
+        with tempfile.TemporaryDirectory() as root:
+            result=run_round_robin(m,root,play)
+            self.assertEqual(len(calls),24)
+            self.assertEqual(result['total_games'],1200)
+            self.assertIsNone(result['score_matrix'][0][1])
+            self.assertEqual(len(result['rankings_by_family']['gylee']),4)
+            run_round_robin(m,root,play)
+            self.assertEqual(len(calls),24)
+
     def test_scenario_and_distance_are_part_of_immutable_manifest(self):
         with tempfile.TemporaryDirectory() as root:
             root=Path(root)

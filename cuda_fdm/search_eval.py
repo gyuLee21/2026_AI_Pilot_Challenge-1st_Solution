@@ -12,7 +12,6 @@ import numpy as np
 import torch
 
 from cuda_fdm.ppo_gpu import build_actor_critic, RunningNorm, action_to_env
-from cuda_fdm.rl_env import GpuDogfightVecEnv
 from cuda_fdm.finite_checks import require_finite, record_integrity_failure
 from cuda_fdm.future_aux import inference_state_dict
 
@@ -155,6 +154,7 @@ def evaluate_pair(env, a, b, scenario, seed, reset_a=False):
 
 
 def run_suite(spec_path, output, stop_file=None):
+    from cuda_fdm.rl_env import GpuDogfightVecEnv
     spec = json.loads(Path(spec_path).read_text(encoding="utf-8"))
     output = Path(output)
     signature = json.dumps(spec, sort_keys=True)
