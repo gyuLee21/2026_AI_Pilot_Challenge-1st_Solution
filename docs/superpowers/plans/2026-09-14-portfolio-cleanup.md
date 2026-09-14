@@ -27,7 +27,11 @@
 - [x] Rewrite README and structure/provenance documentation; distinguish runtime code from historical campaigns.
 - [x] Verify source copies by SHA256, run regression tests and MPC source tests, review staged files and secret patterns.
 - [x] Commit existing evaluation/submission work separately from controller imports and documentation.
-- [ ] Non-force push the reviewed branch, then fast-forward main only if its remote history is an ancestor. Verify remote SHA and private visibility.
+- [x] Non-force push the reviewed branch, then fast-forward main only if its remote history is an ancestor. Verify remote SHA and private visibility.
+
+Publication: `main` and `refactor/model-storage-layout` were atomically advanced
+to `96a24ce` without force. GitHub visibility was confirmed as private.
+The documentation receipt is committed afterward; original history is retained.
 
 ## Verification commands
 
