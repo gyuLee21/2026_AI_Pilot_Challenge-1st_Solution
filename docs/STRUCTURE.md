@@ -6,8 +6,11 @@
 aipilot-rl/
   cuda_fdm/           GPU environment, PPO, league, stable training CLI
   claude_code/        checkpoint-compatible networks and observation references
+  controllers/mpc/   Release MPC source/config/native predictor/tests
+  controllers/bt/    custom BT node source overlay (original SDK required)
   src/dogfight/       common environment contracts and geometry
   evaluation/         tournament engine and verified policy adapters
+  submission/         inference/wire contracts and historical packaging entrypoints
   scripts/            thin train/evaluate entrypoints
   configs/
     training/         portable PPO argument examples
@@ -93,8 +96,8 @@ are intentionally ignored by Git. They contain 27 scenario-specific models,
 original20k 15000/17500/20000, and submission4499: 31 entrants each.
 The only shared entrants between the two rosters are those four baselines.
 Do not replace an existing result manifest with one using different paths.
-The currently running league retains its original roster paths and output
-directory outside this repository; the new configs do not change that run.
+These are historical roster examples, not a current campaign instruction.
+Original league paths and output directories remain unchanged.
 
 See [evaluation protocol](../evaluation/README.md) for deterministic action,
 mirrored games, 5539m Head-on distance and restart semantics.
@@ -110,9 +113,15 @@ to inspect a package. Untrusted PyTorch/pickle files can execute code.
 
 After review, place the package in `approved` and explicitly select a verified
 adapter and evaluation roster. Moving a folder alone does not certify it.
-No teammate packages have been imported yet. BT/MPC packages are stored only;
-the GPU tournament currently accepts compatible checkpoints and the verified
-legacy184 bundle adapter. No automatic BT/MPC/external execution exists.
+The GPU tournament accepts compatible checkpoints, the legacy184 bundle adapter
+and the reviewed external actor adapter. Native BT/MPC opponents use the CPU
+evaluation path and separately supplied runtime assets. Registration alone never
+starts execution. See evaluation/NATIVE_BASELINES.md for the native contract.
+
+Controller source lives under `controllers/`; `artifacts/models/mpc` and
+`artifacts/models/bt` remain local payload/snapshot storage. This distinction
+keeps native binaries and private experiment data out of Git while retaining
+reviewable control code. See [provenance](PROVENANCE.md).
 
 ## Validation
 

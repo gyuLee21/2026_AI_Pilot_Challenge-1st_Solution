@@ -28,3 +28,13 @@ Before commit/push:
 
 The old historical commit is retained. New commits use this convention;
 past published messages are not rewritten solely for stylistic consistency.
+
+## Source and artifact boundaries
+
+Maintain the repository as private unless the owner explicitly approves a
+visibility change. Portfolio preparation does not imply public publication.
+Own controller source belongs in `controllers/mpc` or `controllers/bt`, not in
+ignored model payload folders. Preserve upstream notices and document SDK needs.
+Keep historical campaign scripts clearly labeled; do not call them general APIs.
+Back up untracked scratch work before removal. Do not use a blanket `git clean`.
+Final submission ZIPs are immutable release artifacts, not cleanup targets.

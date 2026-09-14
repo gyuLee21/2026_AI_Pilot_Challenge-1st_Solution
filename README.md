@@ -1,46 +1,79 @@
-# AIPilot RL
+# AI Pilot — Learning, Control & Evaluation
 
-2026-09-11 완료된 Head-on 런타임의 CUDA PPO / active league 소스입니다.
-3-9와 Head-on을 명시적으로 선택할 수 있으며 원본 학습 디렉터리와 분리되어 있습니다.
-GPU 리그전은 [evaluation/README.md](evaluation/README.md)를 참고하세요.
+AI Pilot Top Gun Challenge 공중전 에이전트 개발 기록입니다.
+**강화학습(PPO·리그 학습), 모델 예측 제어(MPC), 행동 트리(BT)**를 다루며,
+학습부터 상대별 평가와 제출 실행파일 패키징까지의 코드를 관리합니다.
 
-## 코드·모델 관리
+이 저장소는 **비공개 소스 저장소**입니다. 모델 가중치, 대회 SDK/DLL, 팀원 모델,
+실험 로그와 최종 제출 ZIP은 Git에 포함하지 않습니다.
 
-[폴더 구조와 실행법](docs/STRUCTURE.md) · [커밋 규칙](docs/CONTRIBUTING.md)
+## 주요 구성
 
-새 학습은 `python scripts/train.py --scenario headon --run-name NAME --dry-run -- ...`
-으로 경로와 인자를 먼저 확인합니다. `three_nine → artifacts/models/rl/3-9`,
-`headon → headon`, `mixed → common`으로 저장을 분리합니다.
-기존 절대경로 기반 resume 명령은 그대로 유지됩니다.
+| 영역 | 구현 내용 | 시작점 |
+|---|---|---|
+| RL | CUDA 병렬 환경, PPO, MLP/GRU, 관측·보상 | [cuda_fdm](cuda_fdm/README.md) |
+| League | exploiter, payoff/Nash, 제한된 active pool, 과거 상대 재검사 | [league_vnext](cuda_fdm/league_vnext) |
+| Evaluation | 3-9/Head-on 분리, 정책 어댑터, CPU/GPU 평가, 판단 주기 비교 | [평가 가이드](evaluation/README.md) |
+| MPC | CEM 탐색, 표적 예측, C++ reduced-order predictor | [Release MPC](controllers/mpc/README.md) |
+| BT | 기하·위협 판단, 기동 선택, blackboard 커스텀 노드 | [BT 소스](controllers/bt/README.md) |
+| Submission | CPU 추론, 판단/응답 주기 분리, UDP, 단일 EXE 패키징 | [패키징 가이드](submission/README.md) |
 
-BT·MPC는 `artifacts/models/bt`, `mpc`, 팀원 패키지는 `external/inbox` 및
-`external/approved`로 분리합니다. 보관만으로 실행되거나 리그전에 자동 추가되지 않습니다.
-가중치와 외부 코드는 Git에 올리지 않습니다.
+## 폴더 구조
 
-## 포함 범위
+```text
+cuda_fdm/           GPU 환경 · PPO · 리그 학습 (기존 import 경로 유지)
+claude_code/        체크포인트 호환 모델 · 관측 참조 구현
+controllers/
+  mpc/release/      MPC 소스 · 설정 · native predictor · 테스트
+  bt/aip_dcs/       대회 SDK에 적용하는 커스텀 BT 소스 overlay
+src/dogfight/       공통 상태/제어 계약 · UDP 인터페이스
+evaluation/        평가 실행기 · 정책 어댑터 · 회귀 테스트
+submission/        추론/통신 · 패키징 · 실행파일 검증
+scripts/           학습/평가 진입점 및 실험 분기 도구
+configs/           재사용 가능한 설정 예시
+tests/             저장 경로 · 추론 계약 테스트
+docs/              구조 · 개발 규칙 · 실험/검토 기록
+artifacts/          로컬 전용 모델 · SDK · 결과 (Git 제외)
+```
 
-- `cuda_fdm/`: GPU 환경, 관측·보상, PPO, exploiter, payoff/Nash, active roster 및 historical recovery, 평가·중단 제어와 테스트
-- `claude_code/`: 관측·보상 참조 구현, actor/critic 및 관련 코드
-- `src/dogfight/`, `GeoMathUtil.py`: 환경 규약과 기하 계산 지원 코드
+## 실행
 
-가중치, optimizer 상태, archive 정책 파일, W&B 로그·인증정보, 실행 로그 및 학습 데이터는 포함하지 않습니다. 이 저장소만으로 학습을 resume할 수는 없습니다. 별도 실행·재개 설정과 원본 학습 데이터가 필요합니다.
+Windows 환경을 기준으로 개발했습니다. GPU 학습에는 NVIDIA 드라이버,
+CUDA 지원 PyTorch 및 NVRTC가 필요합니다. CPU native 평가는 대회 SDK가 별도로 필요합니다.
+단일 requirements 파일로 모든 대회 런타임이 설치되는 프로젝트는 아닙니다.
 
-## 실행 환경
+```powershell
+# 인자와 저장 경로만 확인; 학습은 시작하지 않음
+python scripts/train.py --scenario three_nine --run-name experiment01 --dry-run -- --iters 20000 --rollout 64
 
-현재 CUDA 로더는 Windows NVIDIA 드라이버와 CUDA 지원 PyTorch에 포함된 NVRTC DLL을 사용합니다. Linux 호환성을 검증한 패키지는 아닙니다.
+# 평가 명단에 보유한 모델 경로를 기입한 뒤 입력 검증
+python scripts/evaluate.py --spec evaluation/models.template.json --output artifacts/evaluations/example --validate-only
 
-진입점: `python -m cuda_fdm.train_gpu --help`
+# 기본 회귀검증
+python -m unittest discover -s tests
+python -m unittest discover -s evaluation -p "test_*.py"
+python -m cuda_fdm.tests.vnext_cpu_suite
+```
 
-CPU 회귀검증: `python -m cuda_fdm.tests.vnext_cpu_suite`
+`three_nine`, `headon`, `mixed` 학습의 새 저장 경로는 각각
+`artifacts/models/rl/3-9`, `headon`, `common`입니다.
+기존 학습을 재개하려면 원본 checkpoint·archive와 해당 실행 설정이 필요합니다.
+CLI 기본값을 과거 캠페인 설정으로 간주하지 마세요.
 
-2026-09-11 정리 후 학습·pool 회귀 111개, 평가 5개, 저장 경로·Git 제외 규칙 6개로
-총 122개 테스트가 통과했습니다. 새 학습은 시작하지 않았으며, 진행 중인 분리 리그전의
-실행기·정책 어댑터·GPU 평가 함수·환경 파일 해시가 유지됨을 확인했습니다.
+## 평가를 해석하는 기준
 
-학습 실행에는 목적에 맞는 명시적 CLI 설정이 필요합니다. 기본값이 현재 캠페인 설정과 같다고 가정하지 마세요. W&B 사용 시 각자 자신의 계정으로 로그인해야 합니다.
+- 학습 pool 승률만으로 최종 모델을 선택하지 않습니다. 학습에 사용하지 않은 상대,
+  과거 강한 상대, 서로 다른 전략을 분리해서 비교합니다.
+- 승/패/무, 상대별 성적, 추락률, HP 차이를 함께 봅니다. 상대가 다른 평균 순위는 직접 비교하지 않습니다.
+- CPU/GPU 물리 및 초기화 차이와 10Hz/60Hz 의사결정 차이를 별도로 확인합니다.
+  한 시나리오에서 좋은 판단 주기가 다른 모델에서도 좋다고 가정하지 않습니다.
+- 과거 결과와 설계 문서는 연구 기록이며 현재 실행 설정이나 보편적 성능 보장이 아닙니다.
 
-기존 `cuda_fdm/README.md` 및 하위 설계 문서는 과거 실험 기록을 포함하므로 현재 코드/명시적 실행 설정을 우선합니다. 일부 과거 평가 도구는 별도로 보관된 모델, CPU 시뮬레이터 또는 데이터 파일을 요구합니다.
+## 개발·출처
 
-## 출처와 배포
+[상세 구조](docs/STRUCTURE.md) · [커밋 규칙](docs/CONTRIBUTING.md) ·
+[소스 출처와 재현 범위](docs/PROVENANCE.md) · [정리 검증 기록](docs/PORTFOLIO_CLEANUP.md)
 
-기존 소스의 저작권·출처 표기는 보존합니다. F16/JSBSim 관련 구현을 포함하므로 이 스냅샷 전체에 임의의 오픈소스 라이선스를 새로 부여하지 않았습니다. 외부 공개/재배포 전 원본 및 파생 자료의 라이선스를 별도로 확인하세요.
+커밋은 `feat:`, `fix:`, `refactor:`, `test:`, `docs:`, `chore:`로 목적을 구분합니다.
+기존 기반 코드와 F-16/JSBSim 관련 자료의 출처를 보존하며, 저장소 전체에 새로운
+오픈소스 라이선스를 임의 적용하지 않습니다. 외부 공개 전 재배포 권한을 별도로 검토해야 합니다.
