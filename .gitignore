@@ -50,3 +50,6 @@ temp/
 *.vcxproj.user
 /work_*
 /controllers/mpc/release/runtime/
+
+# Internal planning notes are not part of the public portfolio repository.
+/docs/superpowers/
