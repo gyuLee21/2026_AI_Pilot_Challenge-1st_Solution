@@ -126,8 +126,8 @@ artifacts/models/rl/common/
 
 | 파일 | 용도 |
 |---|---|
-| `추락도락이다_APTGC2026_main.zip` | 3-9/main 시나리오 최종 제출 패키지 |
-| `추락도락이다_APTGC2026_headon.zip` | head-on 시나리오 최종 제출 패키지 |
+| `APTGC2026_1st_main.zip` | 3-9/main 시나리오 최종 제출 패키지 |
+| `APTGC2026_1st_headon.zip` | head-on 시나리오 최종 제출 패키지 |
 | `BattleServer_V1.2_VeryLow.zip` | 로컬에서 제출 agent를 실행·관찰하기 위한 교전 서버 |
 
 Release asset을 내려받은 뒤 압축을 풀어 로컬 서버 폴더와 제출 패키지를 각각 준비합니다. 서버와 제출파일은 Windows native runtime, DLL, 모델 bundle과 강하게 결합되어 있으므로 저장소 루트에 무작정 압축을 풀기보다 release 설명의 실행 순서를 따릅니다.
