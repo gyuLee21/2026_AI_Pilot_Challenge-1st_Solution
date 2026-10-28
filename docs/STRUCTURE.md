@@ -18,6 +18,8 @@ aipilot-rl/
     models/           model registration example
   tests/              storage and launcher tests
   docs/               usage, design, contribution guidelines
+  research/competition_36500/  restored 184D final Main runtime + settings/byte hashes
+  third_party/competition_runtime/  explicitly allowlisted SDK subset + provenance
   artifacts/          local-only payloads; only README is tracked
 ```
 
@@ -122,6 +124,18 @@ Controller source lives under `controllers/`; `artifacts/models/mpc` and
 `artifacts/models/bt` remain local payload/snapshot storage. This distinction
 keeps native binaries and private experiment data out of Git while retaining
 reviewable control code. See [provenance](PROVENANCE.md).
+
+## Restored final Main and the SDK exception (2026-10-28)
+
+The root training modules retain their previous 214D contract. The final 184D
+Main lineage is explicitly selected with `scripts/train.py --runtime
+competition36500`. Its historical source is not copied into the root module
+names. See [paper/code audit](PAPER_CODE_AUDIT.md).
+
+Only three named DLL paths under `third_party/competition_runtime/win64` are
+trackable. All other binaries and local artifacts remain ignored. Preparation
+copies the verified subset to `artifacts/runtimes/competition`, never onto an
+existing evaluation runtime. Source/wrapper copies keep their original bytes.
 
 ## Validation
 

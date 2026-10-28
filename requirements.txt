@@ -1,0 +1,10 @@
+# Shared Python dependencies; choose a CPU/CUDA-specific torch wheel separately.
+# Python 3.11. GPU training also needs an NVIDIA driver and NVRTC (see docs/REPRODUCIBILITY.md).
+numpy>=1.24,<3
+torch>=2.5,<3
+pymap3d>=3.1,<4
+gymnasium>=0.29,<2
+filelock>=3.12,<4
+matplotlib>=3.7,<4
+# Optional: wandb for online logging; pytest for function-style integration tests;
+# PyInstaller for submission builds. MPC has its own requirements file.

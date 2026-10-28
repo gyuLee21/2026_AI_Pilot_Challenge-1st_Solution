@@ -21,6 +21,9 @@ Before commit/push:
 3. Keep weights, archives, teammate source, generated binaries, local rosters,
    authentication data and run logs out of the index. Never use `git add -f`
    for artifacts to bypass this boundary.
+   The only native binary exception is the three exact paths listed in
+   `third_party/competition_runtime/manifest.json`; verify their checksums and
+   preserve their NOTICE before committing. Do not relax `*.dll` globally.
 4. Preserve original third-party authorship and licensing; an ignored local
    copy is not permission to redistribute it.
 5. Do not move or modify code currently used by an evaluation process. Freeze
@@ -31,8 +34,9 @@ past published messages are not rewritten solely for stylistic consistency.
 
 ## Source and artifact boundaries
 
-Maintain the repository as private unless the owner explicitly approves a
-visibility change. Portfolio preparation does not imply public publication.
+Do not change the repository's visibility without explicit owner approval.
+The remote is already public at the 2026-10-28 audit; portfolio maintenance
+does not authorize additional private artifacts or third-party policies.
 Own controller source belongs in `controllers/mpc` or `controllers/bt`, not in
 ignored model payload folders. Preserve upstream notices and document SDK needs.
 Keep historical campaign scripts clearly labeled; do not call them general APIs.

@@ -1,0 +1,27 @@
+name: Source-only checks
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  source-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Verify archived SDK bytes without loading native code
+        run: python scripts/prepare_runtime.py
+      - name: Test staging and managed paths without weights or a GPU
+        run: |
+          python -m unittest discover -s tests -p 'test_runtime_bundle.py' -v
+          python -m unittest discover -s tests -p 'test_competition_runtime.py' -v
+          python -m unittest discover -s tests -p 'test_managed_training.py' -v
+          python -m unittest discover -s tests -p 'test_storage_policy.py' -v
+      - name: Check formatting
+        run: git show --format= --check HEAD
