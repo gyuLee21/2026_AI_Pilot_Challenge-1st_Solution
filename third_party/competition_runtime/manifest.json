@@ -1,0 +1,135 @@
+{
+  "schema_version": 1,
+  "origin": "Competition-provided Release runtime; original bytes retained",
+  "reference_repository": "idearendil/2026_AI_Pilot_Challenge-1st_Solution",
+  "reference_commit": "e677b4bdf93947663501224d5c9122bf71c9d37a",
+  "license_status": "No separate redistribution license found; no license grant is implied",
+  "files": [
+    {
+      "path": "assets/aircraft/f16/f16.xml",
+      "runtime_path": "aircraft/f16/f16.xml",
+      "size": 61255,
+      "sha256": "cdd07a8dd6bd5a1df040ba5f4cc38beebac02e42d9ba38c9cc2918b0417f5d66",
+      "git_blob_sha1": "6a51c2a096d88f2cc03ea44afa785e114aa0b9c1"
+    },
+    {
+      "path": "assets/aircraft/f16/f16_init.xml",
+      "runtime_path": "aircraft/f16/f16_init.xml",
+      "size": 419,
+      "sha256": "00d45496bd07c2e51fd9303fbbbae99bc9b41f579762717d2ce1fdf851794b1b",
+      "git_blob_sha1": "1d7266185624197b7d71c35de61d09795a78f556"
+    },
+    {
+      "path": "assets/aircraft/f16/INSTALL",
+      "runtime_path": "aircraft/f16/INSTALL",
+      "size": 387,
+      "sha256": "88b83aa99bff3c2bac235bea0d04272ea9a6dd10424a700b4df6db45a8f53c49",
+      "git_blob_sha1": "214b8715e3f1c999d6a0e53cfd80fa21090134d2"
+    },
+    {
+      "path": "assets/aircraft/f16/README",
+      "runtime_path": "aircraft/f16/README",
+      "size": 3452,
+      "sha256": "be2da94456eff5af260cd9a17a534c24e9deb6ae8ccf456313aff42ebe433b35",
+      "git_blob_sha1": "25867f280114b7a899595a41800355aee8dd1018"
+    },
+    {
+      "path": "assets/aircraft/f16/reset00.xml",
+      "runtime_path": "aircraft/f16/reset00.xml",
+      "size": 548,
+      "sha256": "738c7d0f3495b072bcdb570c203c92cbd7ae5af3c4213f01183a46dd861a0c85",
+      "git_blob_sha1": "f85b4245e3f73deedf0491f793eb500f346af330"
+    },
+    {
+      "path": "assets/aircraft/f16/Systems/hook.xml",
+      "runtime_path": "aircraft/f16/Systems/hook.xml",
+      "size": 2311,
+      "sha256": "9067ea104820d9d2d2f438b0361cbfdc9cea28a7969bd46eaa540fd7d9dfdd62",
+      "git_blob_sha1": "12a15fbfd7655238cd8372d86871053f37434f2a"
+    },
+    {
+      "path": "assets/aircraft/f16/Systems/pushback.xml",
+      "runtime_path": "aircraft/f16/Systems/pushback.xml",
+      "size": 1192,
+      "sha256": "a3c0e2fc8a494b18b7158718cfc96d51fb34aac440965c0c73a1b7f33bb1a64b",
+      "git_blob_sha1": "e5ba46067d99c7b680fa85bcb2c9d0ed373b5e71"
+    },
+    {
+      "path": "assets/engine/direct.xml",
+      "runtime_path": "engine/direct.xml",
+      "size": 108,
+      "sha256": "f116b6f6d25d4b2b46c2f0faa713e85d0064db7a634105bc96e391fb52e4dde5",
+      "git_blob_sha1": "cc49e02762524f30766f3d851302040655a81a83"
+    },
+    {
+      "path": "assets/engine/engIO470D.xml",
+      "runtime_path": "engine/engIO470D.xml",
+      "size": 931,
+      "sha256": "93ea4f9efd5e5ad1b8491615a635836edd7e7e12709157f26faa70df0184d34d",
+      "git_blob_sha1": "98e84a600f5276158255adfcdb52861d9c97fefa"
+    },
+    {
+      "path": "assets/engine/F100-PW-229.xml",
+      "runtime_path": "engine/F100-PW-229.xml",
+      "size": 3661,
+      "sha256": "92fd101fdcc60dc8f41f449a297e134419ff062f5293c2e58678fd07d8127e69",
+      "git_blob_sha1": "713ec413d563db4f61fe4d126f2db3134173e5a2"
+    },
+    {
+      "path": "assets/engine/F404-GE-402.xml",
+      "runtime_path": "engine/F404-GE-402.xml",
+      "size": 3780,
+      "sha256": "b791aa4387c237392882220189769772206789a9196af916c06521a273629de9",
+      "git_blob_sha1": "8c8f00be167ba6d7f88ae5c58a1d947a634cfa1f"
+    },
+    {
+      "path": "assets/Rule_forTraining.xml",
+      "runtime_path": "Rule_forTraining.xml",
+      "size": 1104,
+      "sha256": "ee8469ad2c77ea0fa1f2f9ffb905b0bc36be494e4d305d43ec9055c3a3bdb10c",
+      "git_blob_sha1": "e96e5523bb37dbd69ecba69c5b1326a3abebb18b"
+    },
+    {
+      "path": "python/DogFightEnvWrapper.py",
+      "runtime_path": "DogFightEnvWrapper.py",
+      "size": 1116,
+      "sha256": "ccbe9f403f6c5199d7a0ef5e964095bbbd2bdacb32c7036e83d23304633afc69",
+      "git_blob_sha1": "c92b049ec58cc7ef05f03045aa23b1f0b188ddca"
+    },
+    {
+      "path": "python/FighterSim.py",
+      "runtime_path": "FighterSim.py",
+      "size": 19212,
+      "sha256": "c158a3bd7731c981fef6cc75018030dbe20879ad10267a467a4a409f4f25a4ab",
+      "git_blob_sha1": "afedd118877fce870c0b63ba76e2fdb5891f7dd3"
+    },
+    {
+      "path": "python/JSBSimWrapper.py",
+      "runtime_path": "JSBSimWrapper.py",
+      "size": 8825,
+      "sha256": "c3c7c505d239de06c9bb26e7c2206d12416fadd346803e89a536490edc64a464",
+      "git_blob_sha1": "a267fd3276bbd804525a2481b45b77f1d1d71242"
+    },
+    {
+      "path": "win64/AIP_BASE.dll",
+      "runtime_path": "AIP_BASE.dll",
+      "size": 2282496,
+      "sha256": "822d07ad970ea4125329f3c86426d46f755c3b54c3c3eb7d924ba622c3904306",
+      "git_blob_sha1": "6b8b45ae48ccde0c6e8b51ef40fdb094e4964aeb"
+    },
+    {
+      "path": "win64/AIP_BASE_target.dll",
+      "runtime_path": "AIP_BASE_target.dll",
+      "size": 2282496,
+      "sha256": "822d07ad970ea4125329f3c86426d46f755c3b54c3c3eb7d924ba622c3904306",
+      "git_blob_sha1": "6b8b45ae48ccde0c6e8b51ef40fdb094e4964aeb"
+    },
+    {
+      "path": "win64/JSBSimAIPLib.dll",
+      "runtime_path": "JSBSimAIPLib.dll",
+      "size": 4357632,
+      "sha256": "f9fc01bb9248f47859174ba0500f96b946fa065fb04a83b458a6b04bd98816f6",
+      "git_blob_sha1": "0e4827621313ddbba4dd412b9c4c3a45f4bc7fc7"
+    }
+  ]
+}

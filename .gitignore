@@ -14,6 +14,10 @@ _bin/
 *.onnx
 *.bin
 *.dll
+# Exact, reviewed competition runtime only; all other binary payloads stay ignored.
+!/third_party/competition_runtime/win64/JSBSimAIPLib.dll
+!/third_party/competition_runtime/win64/AIP_BASE.dll
+!/third_party/competition_runtime/win64/AIP_BASE_target.dll
 *.exe
 *.so
 *.log
