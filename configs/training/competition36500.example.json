@@ -1,0 +1,15 @@
+{
+  "description": "Explicit 184D final-lineage settings. Fresh runs use corrected physics from the beginning; not a replay of every historical intervention or a reproduction of the submitted weights.",
+  "arguments": [
+    "--hidden", "384,384,384", "--nenv", "4096", "--iters", "36500",
+    "--rollout", "64", "--epochs", "4", "--minibatches", "8",
+    "--lr", "0.0003", "--critic-lr", "0.0003", "--ent-coef", "0.001",
+    "--gamma", "0.997", "--gae-lambda", "0.95", "--clip", "0.2",
+    "--aux-pred", "--aux-coef", "0.1", "--active-league",
+    "--sched-period", "2000", "--sched-lr-decay", "0.5", "--sched-ent-decay", "0.5",
+    "--sched-lr-floor", "0.00005", "--sched-ent-floor", "0.0001",
+    "--sched-rollout-increment", "8", "--sched-rollout-cap", "104",
+    "--exploiter-win-target", "0.75", "--exploiter-iters", "1000",
+    "--exploiter-until-iteration", "36000", "--save-runtime", "--no-wandb"
+  ]
+}

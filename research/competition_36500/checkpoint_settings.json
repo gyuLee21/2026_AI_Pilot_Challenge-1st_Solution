@@ -1,0 +1,192 @@
+{
+  "iteration": 36500,
+  "config": {
+    "total_iterations": 36500,
+    "rollout_steps": 104,
+    "gamma": 0.997,
+    "gae_lambda": 0.95,
+    "clip_coef": 0.2,
+    "update_epochs": 4,
+    "num_minibatches": 8,
+    "lr": 0.0003,
+    "critic_lr": 0.0003,
+    "ent_coef": 0.0001,
+    "vf_coef": 0.5,
+    "max_grad_norm": 0.5,
+    "target_kl": 0.03,
+    "num_bins": 21,
+    "architecture": "mlp",
+    "encoder_depth": 2,
+    "save_runtime": true,
+    "hidden": [
+      384,
+      384,
+      384
+    ],
+    "gru_size": 0,
+    "recurrent_seq_len": 32,
+    "activation": "tanh",
+    "aux_pred": true,
+    "aux_coef": 0.1,
+    "normalize_obs": true,
+    "norm_adv": true,
+    "seed": 0,
+    "device": "cuda",
+    "sched_period": 2000,
+    "sched_lr_decay": 0.5,
+    "sched_ent_decay": 0.5,
+    "sched_lr_floor": 5e-05,
+    "sched_ent_floor": 0.0001,
+    "sched_rollout_increment": 8,
+    "sched_rollout_cap": 104,
+    "sched_shaping_ladder": [
+      1.0,
+      0.6,
+      0.32,
+      0.12,
+      0.0
+    ],
+    "pool_evict_cap": 4,
+    "selfplay_gate_threshold": 0.6,
+    "selfplay_ema_alpha": 0.1,
+    "pool_sample_temp": 0.3,
+    "pool_uniform_floor": 0.5,
+    "opp_sample": true,
+    "milestone_period": 500,
+    "league_enabled": true,
+    "league_active_cap": 24,
+    "league_latest_period": 20,
+    "league_recent_period": 100,
+    "league_ema_half_life_games": 512.0,
+    "league_non_latest_cap": 0.12,
+    "league_payoff_games": 64,
+    "league_admission_games": 256,
+    "league_admission_score": 0.65,
+    "league_admission_lcb": 0.6,
+    "league_payoff_refresh_period": 500,
+    "league_redteam_period": 1000,
+    "exploiter_iters": 1000,
+    "exploiter_win_target": 0.75,
+    "exploiter_alternate_altitude_hunt": true,
+    "exploiter_alt_hunt_coef": 5.0,
+    "forced_altitude_hunt_iterations": [
+      15000,
+      15500,
+      16000
+    ],
+    "exploiter_until_iteration": 36000,
+    "exploiter_init_iteration_first": 500,
+    "exploiter_init_iteration_rest": 1000,
+    "exploiter_lr": 0.0001,
+    "exploiter_ent_coef": 0.0001,
+    "exploiter_clip_coef": 0.2
+  },
+  "model_kwargs": null,
+  "model_shapes": {
+    "actor_logits.0.weight": [
+      384,
+      184
+    ],
+    "actor_logits.0.bias": [
+      384
+    ],
+    "actor_logits.2.weight": [
+      384,
+      384
+    ],
+    "actor_logits.2.bias": [
+      384
+    ],
+    "actor_logits.4.weight": [
+      384,
+      384
+    ],
+    "actor_logits.4.bias": [
+      384
+    ],
+    "actor_logits.6.weight": [
+      84,
+      384
+    ],
+    "actor_logits.6.bias": [
+      84
+    ],
+    "critic.0.weight": [
+      384,
+      184
+    ],
+    "critic.0.bias": [
+      384
+    ],
+    "critic.2.weight": [
+      384,
+      384
+    ],
+    "critic.2.bias": [
+      384
+    ],
+    "critic.4.weight": [
+      384,
+      384
+    ],
+    "critic.4.bias": [
+      384
+    ],
+    "critic.6.weight": [
+      1,
+      384
+    ],
+    "critic.6.bias": [
+      1
+    ],
+    "actor_aux_head.weight": [
+      6,
+      384
+    ],
+    "actor_aux_head.bias": [
+      6
+    ],
+    "critic_aux_head.weight": [
+      6,
+      384
+    ],
+    "critic_aux_head.bias": [
+      6
+    ]
+  },
+  "training_objective": null,
+  "scenario": null,
+  "main_schedule": {
+    "version": "bounded_main_schedule_v2_rollout_cap",
+    "base": {
+      "rollout": 64,
+      "ent": 0.001,
+      "actor_lr": 0.0003,
+      "critic_lr": 0.0003,
+      "shaping": 0.0001
+    },
+    "period": 2000,
+    "lr_decay": 0.5,
+    "entropy_decay": 0.5,
+    "lr_floor": 5e-05,
+    "entropy_floor": 0.0001,
+    "rollout_increment": 8,
+    "rollout_cap": 104,
+    "shaping_ladder": [
+      1.0,
+      0.6,
+      0.32,
+      0.12,
+      0.0
+    ]
+  },
+  "optimizer_lr": {
+    "actor_opt": [
+      5e-05
+    ],
+    "critic_opt": [
+      5e-05
+    ]
+  },
+  "archive_size": 456
+}

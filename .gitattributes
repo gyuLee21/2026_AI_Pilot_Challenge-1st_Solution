@@ -1,4 +1,4 @@
 # Preserve original SDK/snapshot bytes so checksum receipts work on any OS.
-/third_party/competition_runtime/** -text
-/research/competition_36500/runtime/** -text
+/third_party/competition_runtime/** -text -whitespace
+/research/competition_36500/runtime/** -text -whitespace
 *.dll binary

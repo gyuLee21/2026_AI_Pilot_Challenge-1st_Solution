@@ -10,6 +10,7 @@ import sys
 
 ROOT = Path(__file__).resolve().parents[1]
 SCENARIO_FOLDERS = {"three_nine": "3-9", "headon": "headon", "mixed": "common"}
+RUNTIMES = {"current": ROOT, "competition36500": ROOT / "research/competition_36500/runtime"}
 MANAGED_OPTIONS = ("--save", "--log", "--league-dir", "--resume", "--scenario")
 
 
@@ -17,12 +18,17 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__, allow_abbrev=False)
     parser.add_argument("--scenario", required=True, choices=SCENARIO_FOLDERS)
     parser.add_argument("--run-name", required=True)
+    parser.add_argument("--runtime", choices=RUNTIMES, default="current",
+                        help="Use the preserved 184D final 3-9 runtime explicitly; default retains the existing runtime")
     parser.add_argument("--artifacts-root", type=Path, default=ROOT / "artifacts/models/rl")
     parser.add_argument("--config", type=Path, help="JSON containing a list of PPO arguments")
     parser.add_argument("--resume", action="store_true", help="Resume this managed run's checkpoint")
     parser.add_argument("--dry-run", action="store_true", help="Print command without creating files or starting CUDA")
     parser.add_argument("ppo_arguments", nargs=argparse.REMAINDER, help="PPO options after --")
     args = parser.parse_args()
+    runtime_root = RUNTIMES[args.runtime]
+    if args.runtime == "competition36500" and args.scenario != "three_nine":
+        parser.error("competition36500 is the final 3-9 lineage; use current for other scenarios")
 
     if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_.-]{0,79}", args.run_name):
         parser.error("run-name must be a simple name, not a path")
@@ -57,19 +63,30 @@ def main() -> int:
 
     command = [
         sys.executable, "-m", "cuda_fdm.train_gpu",
-        "--scenario", args.scenario,
         "--save", str(checkpoint),
         "--log", str(run / "training.csv"),
         "--league-dir", str(run / "league"),
     ]
+    if args.runtime == "current":
+        command.extend(["--scenario", args.scenario])
+    # The preserved final source predates --scenario and already fixes the
+    # initial distribution to three-nine (scenario_b_prob=0). Do not pass a
+    # modern flag to its historical parser or silently alter its source.
     if args.resume:
         command.extend(["--resume", str(checkpoint)])
     command.extend(forwarded)
     if args.dry_run:
-        print(json.dumps({"cwd": str(ROOT), "run_directory": str(run), "command": command}, indent=2))
+        print(json.dumps({"cwd": str(runtime_root), "runtime": args.runtime,
+                          "run_directory": str(run), "command": command}, indent=2))
         return 0
     run.mkdir(parents=True, exist_ok=True)
-    return subprocess.run(command, cwd=ROOT, check=False).returncode
+    import os
+    environment = os.environ.copy()
+    # A child interpreter isolates same-named historical modules; never mutate
+    # this process's imports or transplant 214D weights into the 184D trainer.
+    if args.runtime != "current":
+        environment['PYTHONPATH'] = os.pathsep.join((str(ROOT / 'src'), str(ROOT)))
+    return subprocess.run(command, cwd=runtime_root, env=environment, check=False).returncode
 
 
 if __name__ == "__main__":

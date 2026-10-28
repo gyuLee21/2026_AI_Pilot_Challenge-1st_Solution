@@ -1,5 +1,10 @@
 # cuda_fdm — F16 JSBSim v1.0.0 CUDA 포팅
 
+> **계보 안내 (2026-10-28):** 아래 캠페인 메모와 기본값은 이 214D 계열의 역사 기록입니다.
+> 논문 최종 3-9 36.5k의 184D·연료/FCS/초기화 수정 runtime은
+> [research/competition_36500](../research/competition_36500/README.md)에 복원되어 있습니다.
+> 두 계보의 파일이나 checkpoint를 개별적으로 섞지 마세요.
+
 > 이 사본은 현재 실행 중인 scratch 100K 캠페인의 고정 런타임이다.
 > `three_nine`와 `headon`은 서로 다른 run root를 사용하며, vNext는
 > stage 1 live adapter로 동작한다. rollout은 의도적으로 64에 고정되어

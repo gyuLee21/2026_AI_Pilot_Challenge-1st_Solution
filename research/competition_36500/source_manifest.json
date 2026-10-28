@@ -1,0 +1,296 @@
+{
+  "schema_version": 1,
+  "source": "Preserved final 36,500 training runtime (2026-09-14)",
+  "source_scope": "Selected training dependencies; original bytes, no checkpoint/optimizer/pool payloads",
+  "shared_dependencies": [
+    "src/dogfight/sim/state_schema.py",
+    "src/dogfight/envs/termination.py"
+  ],
+  "files": [
+    {
+      "path": "GeoMathUtil.py",
+      "size": 7061,
+      "sha256": "577d1cfa5f207ffd404221f6da7b8beb7873cde84b01452095a189a7d451393b"
+    },
+    {
+      "path": "claude_code/__init__.py",
+      "size": 513,
+      "sha256": "38755eb28bdf100ad58e9f6358bbd96f0bc08eaaaa481ce8c1222b2e3f911dfd"
+    },
+    {
+      "path": "claude_code/model.py",
+      "size": 32203,
+      "sha256": "cb239babd0cf7e6611ccb3755d477330f9742a1cb44cfe60b2fe8e999bf66bec"
+    },
+    {
+      "path": "claude_code/my_observation.py",
+      "size": 31338,
+      "sha256": "2eb677f8a61e92e54e338fc6844a6a15317f2180d0c3626fc871977bb469ae53"
+    },
+    {
+      "path": "claude_code/my_reward.py",
+      "size": 33721,
+      "sha256": "8c0fa5be9b5f41b42e9202bfce4add059cafd32c2337812b8ddab0646411e81f"
+    },
+    {
+      "path": "cuda_fdm/__init__.py",
+      "size": 68,
+      "sha256": "1f8dfced0514c714590d5436c3bdcd8a20b081a5220999a4ad435f32b5a7d19d"
+    },
+    {
+      "path": "cuda_fdm/batched_payoff.py",
+      "size": 9403,
+      "sha256": "6959ff7a487874ed8af04af4bb957eddf213d8693c827c4fe14d6067aec31cee"
+    },
+    {
+      "path": "cuda_fdm/external_observation.cu",
+      "size": 1700,
+      "sha256": "c5c43faed5cf70832d2a147e5add9edb36e596cc08c686ced12889eab2acbd51"
+    },
+    {
+      "path": "cuda_fdm/external_opponents.py",
+      "size": 3286,
+      "sha256": "8751adfcd4dfd240425d5fb8c69382fbe80b417a4ab807f44ddde602b05fdd1a"
+    },
+    {
+      "path": "cuda_fdm/finite_checks.py",
+      "size": 3556,
+      "sha256": "25c30038dca7a66dc1241bbbd0d45b31fad9cc3ed213df37c3b1f7689b8d002a"
+    },
+    {
+      "path": "cuda_fdm/future_aux.py",
+      "size": 3833,
+      "sha256": "4aac3878f5df3df4346afe3fd3b540f5b0f571fffc29f1b17ab1dfb5168a6446"
+    },
+    {
+      "path": "cuda_fdm/gpu_ckpt_to_bundle.py",
+      "size": 9849,
+      "sha256": "152a9174b8d1eed284dc10e1f6ccc2e7d1b5467e47e6d0cef3a0e64da828d809"
+    },
+    {
+      "path": "cuda_fdm/gpu_env.py",
+      "size": 5469,
+      "sha256": "1953ebc161dfc5b2e1671c7196660625861649d8c3b4dedc877b32ea73851609"
+    },
+    {
+      "path": "cuda_fdm/ic.py",
+      "size": 6287,
+      "sha256": "41dd99a13461e5797bc0f7f58438a24385ac3f1c1538bc83d1b94f889de1d96a"
+    },
+    {
+      "path": "cuda_fdm/league.py",
+      "size": 30639,
+      "sha256": "076c462e0071f2c0ae20c3afa6d6beac55e4067d4ecbdef6aa36290bb894895b"
+    },
+    {
+      "path": "cuda_fdm/obs_reward.py",
+      "size": 43014,
+      "sha256": "6366d406badf030435259cf0acacfa6a94470d880e0c667faac40c22bb188095"
+    },
+    {
+      "path": "cuda_fdm/parallel_payoff.py",
+      "size": 3662,
+      "sha256": "d6b8781fee14e29aabde32c7af687aada560ae851d684b893d7a30f4c751223f"
+    },
+    {
+      "path": "cuda_fdm/ppo_gpu.py",
+      "size": 170770,
+      "sha256": "6bd192edc6111fde303ec0c0f9ef461adeb7711e7eeca4a5f6ec0a8f7c13e2c5"
+    },
+    {
+      "path": "cuda_fdm/reward_modes.py",
+      "size": 2977,
+      "sha256": "dbb900765f1c8d825ee673a7865fe78333bda73c874864455909fe92e68f34a2"
+    },
+    {
+      "path": "cuda_fdm/rl_env.py",
+      "size": 31737,
+      "sha256": "8d09c19ce3cc163eeb0b235e4a315ceed2a8c1da008c756bb8f1ba974b65b3c8"
+    },
+    {
+      "path": "cuda_fdm/search_eval.py",
+      "size": 9375,
+      "sha256": "51e00659436811040deb0d01e0db47568d9cea758696aac4577c57126ceccbf9"
+    },
+    {
+      "path": "cuda_fdm/train_gpu.py",
+      "size": 27509,
+      "sha256": "4715daaf61a24bda89b2d8088bd401e8a70cf02ebb125568b9ef483c961b83a8"
+    },
+    {
+      "path": "cuda_fdm/ref/__init__.py",
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "cuda_fdm/ref/f16_aero_data.py",
+      "size": 20010,
+      "sha256": "c747be94977e01450ce19b8b95fd33fce5c2623d9b1763af45024317aa9a5fdc"
+    },
+    {
+      "path": "cuda_fdm/ref/jsb_accel.py",
+      "size": 1415,
+      "sha256": "49af67d155f6b23fb823693b03abb6daa96efee65b534c89cd6189238388f06e"
+    },
+    {
+      "path": "cuda_fdm/ref/jsb_aero.py",
+      "size": 4428,
+      "sha256": "2376ce48d003886a63152277d47770a979f4254bf71ab7573d40f0b2316eff72"
+    },
+    {
+      "path": "cuda_fdm/ref/jsb_atmos.py",
+      "size": 4491,
+      "sha256": "5eccb9aa53471707d25cc27cfd379cac4c35720dcf1d4ba308eb0bdcf14e2c4d"
+    },
+    {
+      "path": "cuda_fdm/ref/jsb_auxiliary.py",
+      "size": 2826,
+      "sha256": "d295b21a4f50f95673737c31cf696c4f95c99ce0c18e79a6cbeb4565ec4ab58b"
+    },
+    {
+      "path": "cuda_fdm/ref/jsb_const.py",
+      "size": 1359,
+      "sha256": "5b274290899c17b9466256741fce0d9b3edbd9d7c36c3a8af3fed38e71c1302b"
+    },
+    {
+      "path": "cuda_fdm/ref/jsb_fcs.py",
+      "size": 12877,
+      "sha256": "8f7bb26cec8570386abcf08d32fa6ed285663119986731c461a8c3756bbd7ffd"
+    },
+    {
+      "path": "cuda_fdm/ref/jsb_fdm.py",
+      "size": 11771,
+      "sha256": "9d54f19c60822f14f4b5b0f61b363969a391d2d404cf48d1ab73d5975865a8a4"
+    },
+    {
+      "path": "cuda_fdm/ref/jsb_frames.py",
+      "size": 6676,
+      "sha256": "3e6388bde15b725d39bf854df97f442f582b9ab23cabf56edc8f74142165d019"
+    },
+    {
+      "path": "cuda_fdm/ref/jsb_lin.py",
+      "size": 1055,
+      "sha256": "983409b9455b449b5b55fa439a2a6ebfabb4706edc97683da471372aebedca50"
+    },
+    {
+      "path": "cuda_fdm/ref/jsb_massbalance.py",
+      "size": 3286,
+      "sha256": "0fc11968421148c527bcd7482b62a250a5ed4148787481fc8a42b4a31b1fc847"
+    },
+    {
+      "path": "cuda_fdm/ref/jsb_propulsion.py",
+      "size": 5822,
+      "sha256": "d0f086d8a244895cc488386b1c6912e23bfae3be4c1d9d9fc278d9e915fad1ba"
+    },
+    {
+      "path": "cuda_fdm/ref/jsb_tables.py",
+      "size": 3021,
+      "sha256": "62fa7f170ba4d9873c72418da02e008e3ba9e73b27379fcd86424bfbca8f0829"
+    },
+    {
+      "path": "cuda_fdm/gen/fdm_kernel.cu",
+      "size": 2330,
+      "sha256": "7a92e2c6c5612761dc414725a51bae92375f04fba8de73192bf1870be0a62385"
+    },
+    {
+      "path": "cuda_fdm/gen/obs_kernel.cu",
+      "size": 30483,
+      "sha256": "c166b2b7e68cf875194eaebf098d7f38042d7ae26bc4a28658dcaae6b5e0cc8f"
+    },
+    {
+      "path": "cuda_fdm/gen/f16_gen.cuh",
+      "size": 25148,
+      "sha256": "02143fd6b018541846e1d682b864b84aa3e009dffd4958790d73bfc22fc98145"
+    },
+    {
+      "path": "cuda_fdm/gen/fdm.cuh",
+      "size": 30381,
+      "sha256": "06c0d699d9d123bc69fa337ddee9a978d9d00f73582f69630091e844e184da79"
+    },
+    {
+      "path": "cuda_fdm/tests/cuda_rt.py",
+      "size": 6791,
+      "sha256": "44b112e37bbc4d05b06d0c89f583a95bdc70743b0a87e0c4134c486828958851"
+    },
+    {
+      "path": "cuda_fdm/tests/active_league_val.py",
+      "size": 44405,
+      "sha256": "7e434d869c9a5588092c4096a68ffe18b302c4a3a40944bcbd3ce66bc51e9a89"
+    },
+    {
+      "path": "cuda_fdm/tests/future_aux_val.py",
+      "size": 23157,
+      "sha256": "3a139e929f039b0819d40fc755fc1c1cf1d6b507078a1f52a996476536385efd"
+    },
+    {
+      "path": "cuda_fdm/tests/main_schedule_val.py",
+      "size": 13723,
+      "sha256": "80b0bc06733554583c1aaecfe8d33f70aaa30395aa2fdf370aeb20db7e049e5e"
+    },
+    {
+      "path": "cuda_fdm/tests/pool_episode_val.py",
+      "size": 11149,
+      "sha256": "052dd1ceb8d72193039abd47257b3a0da49834b6cc29f30388713d71144ce80e"
+    },
+    {
+      "path": "cuda_fdm/tests/pool_assigned_val.py",
+      "size": 8356,
+      "sha256": "bd3ae05d898382a10438da83fd4761a15810df20b455c67fe96188325cbab50e"
+    },
+    {
+      "path": "cuda_fdm/tests/altitude_reward_val.py",
+      "size": 12135,
+      "sha256": "d2674a39f2c718d454599caded11e561944a40586af3a9d4c6e53afa56821819"
+    },
+    {
+      "path": "cuda_fdm/tests/damage_styles_val.py",
+      "size": 7139,
+      "sha256": "0bc4bd084f22e317e1bfd46668c06674161ed46dbacc44f048db12b49e1505b6"
+    },
+    {
+      "path": "cuda_fdm/tests/finite_guard_val.py",
+      "size": 6213,
+      "sha256": "a15bbee6797b6804b19a4cf7114cf31ae90c2d42d42dfcfc9b9ccf8603bd649f"
+    },
+    {
+      "path": "claude_code/observation_contract.py",
+      "size": 3437,
+      "sha256": "6689e60b6f0cdbded72317a8aed31bd9c163acf58ee7315b6520ebcf2f2bb499"
+    },
+    {
+      "path": "cuda_fdm/tests/pool_identity_audit.py",
+      "size": 16325,
+      "sha256": "efa0f0fd3441a64a0f84750352bbcb6e6eae640bced48de6a6938dce09bb314e"
+    },
+    {
+      "path": "claude_code/action_provider.py",
+      "size": 12333,
+      "sha256": "e2d4beafe643d63d24729df960c08e04fc1248efd3953820dd5076b6cb2f0616"
+    },
+    {
+      "path": "cuda_fdm/tests/submission_contract_audit.py",
+      "size": 16061,
+      "sha256": "e5cb0f6b4a280af9a6f73664d4f92827b4e9129766c6e36340efe7ba342359ad"
+    },
+    {
+      "path": "cuda_fdm/architecture_search.py",
+      "size": 30571,
+      "sha256": "f279c5db29505fe3fa356637867bf69e1bb9292cdeecb8e6e4631d4cfafdd9d8"
+    },
+    {
+      "path": "cuda_fdm/mlp_size_search.py",
+      "size": 37643,
+      "sha256": "ffcbf045089f67ebdc2191e2048214bba6581354895210d4a9600dbfb905ecd2"
+    },
+    {
+      "path": "cuda_fdm/tests/obs_reward_val.py",
+      "size": 11061,
+      "sha256": "9f24600cea4e02925ecae6c449ef6896c109febccfc6dbef560e013a29d4ed56"
+    },
+    {
+      "path": "cuda_fdm/bundle_completion.py",
+      "size": 4791,
+      "sha256": "7bd8e7a562e3fe7e5e64c5db83f0cb673b26dd230a1f6db3ea7df16fedd6cdaa"
+    }
+  ]
+}
