@@ -12,6 +12,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          # git show --check needs HEAD's parent; a depth-1 checkout treats
+          # HEAD as a root commit and falsely checks every historical file.
+          fetch-depth: 2
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'

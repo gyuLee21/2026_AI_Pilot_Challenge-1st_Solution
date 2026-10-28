@@ -44,3 +44,9 @@ Full GPU training, CPU combat integration, clean-PC CRT provisioning, BT
 compilation and submission rebuilding were not performed. No new performance
 claim follows from source import or these tests. Existing weights, completed
 run data, final submission ZIPs and repository visibility were not changed.
+
+GitHub's first source-check run passed all 16 tests and SDK verification. Its
+formatting step exposed a CI-only depth-1 checkout issue: `git show --check`
+treated HEAD as a root commit and inspected pre-existing whitespace in old
+files. Checkout now fetches the parent (depth2); no historical source was
+reformatted to disguise the error.
