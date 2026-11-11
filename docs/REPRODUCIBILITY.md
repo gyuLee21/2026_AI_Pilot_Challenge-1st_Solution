@@ -1,61 +1,63 @@
-# Setup and reproducibility
+# 설치 · 실행 가이드
 
-## Runtime layers
+## 환경 단계
 
-1. **Source-only checks:** Python3.11 and Git. Hash/launcher/storage tests use
-   the standard library, no model files, GPU context or native DLL loading.
-2. **CPU policy and league tests:** the shared `requirements.txt` dependencies.
-3. **CUDA training:** NVIDIA driver, a compatible CUDA-enabled PyTorch build,
-   NVRTC and enough GPU memory. Choose the torch wheel for the actual system;
-   `requirements.txt` is a dependency range, not a historical environment lock.
-4. **Native CPU combat:** Windows x64, the provided DLLs and required CRT,
-   aircraft/engine assets, models, baseline rules and the matching evaluator.
-5. **MPC native build / submission build:** separate toolchains described in
-   `controllers/mpc/README.md` and `submission/README.md`.
+| 단계 | 필요한 것 | 할 수 있는 것 |
+|---|---|---|
+| 1. 소스 검사 | Python 3.11, Git | 해시 · 실행기 · 저장 구조 테스트 (GPU · 가중치 · DLL 로드 없음) |
+| 2. CPU 정책 · 리그 테스트 | `requirements.txt` | 리그 상태 로직, 정책 추론 |
+| 3. CUDA 학습 | NVIDIA 드라이버, CUDA PyTorch(NVRTC 포함) | GPU 환경 · PPO 학습 |
+| 4. CPU 교전 평가 | Windows x64, 대회 DLL · CRT, 모델 파일 | 대회 시뮬레이터 기반 평가 |
+| 5. MPC · 제출 빌드 | Visual Studio 2022, CMake, PyInstaller | [MPC](../controllers/mpc/README.md) · [제출](../submission/README.md) 문서 참고 |
 
-## Prepare a clean clone
+`requirements.txt`는 의존성 범위입니다. PyTorch는 시스템에 맞는 CPU/CUDA 빌드를 따로 고르세요.
+
+## 설치
 
 ```powershell
 python -m venv .venv
 .venv\Scripts\Activate.ps1
 python -m pip install -r requirements.txt
-python scripts/prepare_runtime.py
-python scripts/prepare_runtime.py --install
+
+python scripts/prepare_runtime.py            # 대회 DLL 해시 검증만 수행
+python scripts/prepare_runtime.py --install  # artifacts/runtimes/competition 에 격리 설치
 ```
 
-The second preparation command stages an isolated runtime, never replaces a
-different existing DLL. Neither command tests DLL execution or installs CRTs.
-Do not copy debug runtimes from unrelated installations to hide a missing
-dependency. Review the SDK provider's environment requirements.
+설치 명령은 기존 파일과 내용이 다르면 덮어쓰지 않습니다. DLL 실행이나 CRT 설치는 하지 않습니다.
 
-Default staging target: `artifacts/runtimes/competition`. The older evaluator's
-`cpu_baselines` directory contains project-modified wrappers/providers and is
-not silently replaced with the provided originals. Its additional policy files
-remain local. Clone-and-stage alone does not reconstruct that full campaign.
+## 학습 계보 선택
 
-## Select a training lineage explicitly
+| 계보 | 관측 | 선택 방법 |
+|---|---|---|
+| 루트 `cuda_fdm/` | 214D (Head-on 등) | 기본값 |
+| `research/competition_36500/` | 184D (최종 3-9) | `--runtime competition36500` |
 
-For the restored 184D Main source, use `--runtime competition36500 --scenario
-three_nine`. Existing callers without `--runtime` continue to select the 214D
-root runtime. The launcher uses a separate interpreter and working directory,
-so identically named `cuda_fdm` modules from two lineages cannot share a process.
-Use `--dry-run` before any real experiment. No process starts automatically.
+두 계보는 같은 이름의 모듈을 쓰지만 별도 인터프리터 · 작업 경로로 실행되어 한 프로세스에서 섞이지 않습니다.
+항상 `--dry-run`으로 명령을 확인한 뒤 실행하세요.
 
-The checked-in example and final checkpoint receipt describe different things:
-an explicit fresh-run schedule versus settings at the end of a completed run.
-Only the original checkpoint and its complete archive/runtime history can
-support exact continuation. Results from the paper's post-competition ablation
-must remain separate from competition-policy training.
+```powershell
+python scripts/train.py --runtime competition36500 --scenario three_nine --run-name my_run `
+  --config configs/training/competition36500.example.json --dry-run
+```
 
-## Evaluation
+예시 설정은 새 실험을 위한 것이며, 제출 가중치를 그대로 재현하지는 않습니다.
+과거 학습을 정확히 이어가려면 원본 체크포인트와 상대 archive · 실행 상태가 모두 필요합니다.
 
-Supply trusted model paths in a local evaluation spec and use a new output
-directory. `scripts/evaluate.py` invokes the existing GPU tournament; it does
-not automatically select the restored learner runtime. CPU and GPU evaluation,
-10/60Hz decision rates and initial-state/termination contracts require separate
-verification; identical weights are not evidence of identical environments.
+## 평가
 
-Some original integration tests require local weights, external policy packages
-or build tools. Do not interpret their absence in a clean clone as a passed
-integration test. See `docs/PAPER_CODE_AUDIT.md` for remaining paper/evidence
-discrepancies and `docs/MAINTENANCE_20261028.md` for checks performed in this edit.
+```powershell
+python scripts/evaluate.py --spec configs/evaluation/three_nine.local.json --output artifacts/evaluations/three_nine --validate-only
+```
+
+모델 경로는 로컬 평가 spec에 지정합니다([예시](../configs/evaluation/README.md)).
+CPU/GPU 평가, 10Hz/60Hz 판단 주기는 서로 다른 조건이므로 결과를 따로 해석합니다.
+자세한 프로토콜은 [evaluation/README.md](../evaluation/README.md)를 참고하세요.
+
+## 테스트
+
+```powershell
+python -m unittest discover -s tests -v
+python -m unittest discover -s evaluation -p "test_*.py"
+```
+
+일부 통합 테스트는 로컬 가중치나 빌드 도구가 있어야 실행됩니다.

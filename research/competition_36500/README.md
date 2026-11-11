@@ -23,8 +23,8 @@ changing that lineage's imports or checkpoint protocol.
 `source_manifest.json` gives the SHA-256 of each original source file.
 `checkpoint_settings.json` contains configuration and tensor **shapes only**;
 it contains no model weights, optimizer tensors, RNG state or opponent payloads.
-Original comments sometimes describe earlier settings; the manifest, final
-constants and [paper/code audit](../../docs/PAPER_CODE_AUDIT.md) distinguish them.
+Original comments sometimes describe earlier settings; the manifest and final
+constants are authoritative.
 
 ## Entry point
 
@@ -38,7 +38,7 @@ python scripts/train.py --runtime competition36500 --scenario three_nine --run-n
 Remove `--dry-run` only when intentionally starting a **new experiment**.
 The launcher runs a separate interpreter from this runtime root, with the
 repository's shared `src` on PYTHONPATH. Existing 214D modules are not imported
-into this runtime. No training was started as part of repository maintenance.
+into this runtime.
 
 The example specifies a corrected-physics fresh run and the bounded schedule;
 it does **not** replay all reward interventions, manually inserted opponents,
@@ -46,11 +46,3 @@ or old physical conditions from the original 20k→36.5k campaign. Reproducing t
 submitted weights exactly requires the original checkpoint, archive, RNG/runtime
 state and intervention history. An old copied checkpoint may embed local archive
 paths; do not claim arbitrary checkpoint copies are portable resumes.
-
-## Paper versus measured history
-
-The paper draft is used to identify intended components, not to fabricate
-historical settings. Its privileged critic, potential-difference shaping and
-some fixed LR/rollout/side-learner statements differ from preserved evidence.
-They are documented in the audit rather than implemented retroactively and
-described as if they produced the original results.
