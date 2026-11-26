@@ -8,8 +8,8 @@
 
 ![Python](https://img.shields.io/badge/Python-3.11-3776AB?logo=python&logoColor=white)
 ![PyTorch](https://img.shields.io/badge/PyTorch-CUDA-EE4C2C?logo=pytorch&logoColor=white)
-![CUDA](https://img.shields.io/badge/CUDA-NVRTC-76B900?logo=nvidia&logoColor=white)
-![Platform](https://img.shields.io/badge/Platform-Windows%20x64-0078D6?logo=windows&logoColor=white)
+![CUDA](https://img.shields.io/badge/CUDA-NVRTC-76B900?style=flat&logo=nvidia&logoColor=white)
+![Platform](https://img.shields.io/badge/Platform-Windows%20x64-0078D6?style=flat)
 
 </div>
 
