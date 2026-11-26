@@ -7,10 +7,9 @@
 `decision_rate_match.py`는 CPU 판단 주기 비교를 담당합니다.
 CPU native 경로에는 Git에 포함되지 않는 대회 SDK/DLL이 필요합니다.
 
-`after_training.py`, `transfer_campaign.py`, `transfer_headon46k.py`,
-`cpu_36k_rate_match.py`, `final_selection.py` 및 `start_after_*.ps1`은
-특정 과거 캠페인 경로·iteration·후보를 담은 실행 기록입니다.
-재현을 위해 유지하지만 새 실험에 그대로 실행하지 마세요.
+대회 기간에 특정 경로·iteration·후보로 한 번 실행한 스크립트는
+[`campaigns/`](campaigns/README.md)에 따로 모았습니다. 새 실험에 그대로 실행하지 마세요.
+`transfer_campaign.py`, `final_selection.py`는 다른 실행기가 import하므로 이 폴더에 남아 있습니다.
 결과는 항상 새로운 출력 경로에 저장하고, 기존 manifest와 다른 설정을 섞지 않습니다.
 
 ## GPU 리그전

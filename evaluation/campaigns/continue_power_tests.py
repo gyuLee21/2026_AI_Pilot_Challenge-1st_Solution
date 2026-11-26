@@ -2,6 +2,9 @@
 
 This is a finite evaluation queue, not a recurring monitor. Stops on any error.
 """
+import sys as _sys
+from pathlib import Path as _Path
+_sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))  # evaluation/
 import argparse
 import json
 from pathlib import Path
@@ -14,7 +17,7 @@ import os
 
 from tournament import save_json
 
-ROOT=Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 STATUS=ROOT/'artifacts/evaluation/final_power_tests/queue.json'
 
 
@@ -49,7 +52,7 @@ def main():
         subprocess.run([sys.executable,'-u','evaluation/native_matchups.py','--spec',
             'configs/evaluation/'+config,'--output',f'artifacts/evaluation/power_{scenario}_cpu',
             '--workers','7'],cwd=ROOT,check=True)
-        subprocess.run([sys.executable,'evaluation/power_results.py'],cwd=ROOT,check=True)
+        subprocess.run([sys.executable,'evaluation/campaigns/power_results.py'],cwd=ROOT,check=True)
     save_json(STATUS,dict(status='available_models_complete',pending='taemin.zip local download'))
 
 

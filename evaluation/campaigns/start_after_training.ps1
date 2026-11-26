@@ -6,7 +6,7 @@ param(
     [Parameter(Mandatory=$true)][string]$Output
 )
 $ErrorActionPreference = 'Stop'
-Set-Location (Split-Path $PSScriptRoot -Parent)
+Set-Location (Split-Path (Split-Path $PSScriptRoot -Parent) -Parent)
 Write-Output "Waiting for training process $TrainingProcessId to exit cleanly."
 while (Get-Process -Id $TrainingProcessId -ErrorAction SilentlyContinue) {
     # Read-only polling works across the process permission boundary where
@@ -19,5 +19,5 @@ for ($attempt=0; $attempt -lt 30; $attempt++) {
     Start-Sleep -Seconds 2
 }
 Write-Output 'Checking saved iteration, then GPU preflight and league.'
-& $Python evaluation/after_training.py --run-dir $RunDir --spec $Spec --output $Output
+& $Python evaluation/campaigns/after_training.py --run-dir $RunDir --spec $Spec --output $Output
 if ($LASTEXITCODE -ne 0) { throw 'Evaluation stopped on verification/runtime failure. See launch_status.json; training was not resumed.' }

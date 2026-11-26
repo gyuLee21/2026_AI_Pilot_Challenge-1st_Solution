@@ -3,6 +3,9 @@
 No backend columns in the presentation. Source paths and execution backend remain
 in JSON provenance. Missing matches are pending, never fabricated as draws.
 """
+import sys as _sys
+from pathlib import Path as _Path
+_sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))  # evaluation/
 from itertools import combinations
 import json
 from pathlib import Path
@@ -10,7 +13,7 @@ import math
 
 from tournament import prepare, save_json
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 OUT = ROOT/'artifacts/evaluation/final_power_tests'
 ALIASES = {'original20k_20000':'gylee_original20k',
            'three_nine_iter_69000':'gylee_69000', 'headon_iter_46000':'gylee_headon46000'}

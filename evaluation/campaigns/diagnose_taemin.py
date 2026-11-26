@@ -1,10 +1,13 @@
 """Read-only two-episode diagnostic of the assumed Taemin inference contract."""
+import sys as _sys
+from pathlib import Path as _Path
+_sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))  # evaluation/
 import sys
 from pathlib import Path
 import json
 import torch
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 from junhwa_policy import load_junhwa_policy
 from policy_io import load_bundle_policy

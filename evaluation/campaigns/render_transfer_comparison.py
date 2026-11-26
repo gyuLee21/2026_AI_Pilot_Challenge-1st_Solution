@@ -6,7 +6,7 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
-ROOT=Path(__file__).resolve().parents[1]/'artifacts/evaluations/transfer_36000_20260913'
+ROOT=Path(__file__).resolve().parents[2]/'artifacts/evaluations/transfer_36000_20260913'
 MODELS=['gylee_20000','gylee_23000','gylee_36000']
 LABELS={
     'junhwa_final':'Junhwa final','junhwa_grid_3L749_gru_last':'Junhwa GRU',
