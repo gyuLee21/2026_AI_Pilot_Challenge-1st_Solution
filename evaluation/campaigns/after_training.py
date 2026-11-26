@@ -1,4 +1,7 @@
 """One-shot, fail-closed GPU evaluation after a verified clean training stop."""
+import sys as _sys
+from pathlib import Path as _Path
+_sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))  # evaluation/
 import argparse
 import json
 from pathlib import Path

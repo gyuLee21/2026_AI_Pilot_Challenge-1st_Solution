@@ -20,7 +20,7 @@ from typing import Any
 import numpy as np
 import torch
 
-from .league_vnext.decision_log import DecisionLog
+from ..league_vnext.decision_log import DecisionLog
 
 
 CHECKPOINT_GATE_PATH = (

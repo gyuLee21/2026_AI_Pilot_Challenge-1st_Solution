@@ -1,5 +1,9 @@
 # Final 3-9 training lineage — restored 184D runtime
 
+> **보존용 사본입니다.** `runtime/` 아래 코드는 최종 3-9 36.5k 모델을 학습한 당시 소스를 그대로 보관한 것으로,
+> 루트 `cuda_fdm/` · `claude_code/`와 이름이 같은 파일이 많습니다. 두 계보는 관측 차원(184D / 214D)과
+> 체크포인트 규약이 달라 일부러 합치지 않았습니다. 파일별 SHA-256은 `source_manifest.json`에 있으므로 수정하지 마세요.
+
 This is the preserved source used by the final 36,500-iteration Main branch,
 not a new algorithm and not a freshly trained model. It restores post-20k work
 missing from the public root's separate 214D/Head-on lineage without silently

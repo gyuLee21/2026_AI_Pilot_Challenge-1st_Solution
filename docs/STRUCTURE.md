@@ -18,8 +18,8 @@ tests/                        저장 구조 · 실행기 테스트
 artifacts/                    로컬 전용 (README만 Git 관리)
 ```
 
-`evaluation/` 안의 `after_training.py`, `transfer_*.py`, `final_selection.py` 등은
-특정 대회 기간의 평가 기록용 스크립트입니다. 새 실험은 `tournament.py` · `native_baselines.py`에서 시작합니다.
+`evaluation/campaigns/`와 `cuda_fdm/campaigns/`에는 대회 기간에 한 번 쓰고 끝난 평가·체크포인트 변환
+스크립트를 보관합니다. 새 실험은 `evaluation/tournament.py` · `native_baselines.py`에서 시작합니다.
 
 ## 로컬 모델 저장 (`artifacts/`, Git 제외)
 
