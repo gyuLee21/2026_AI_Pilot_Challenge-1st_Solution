@@ -6,10 +6,10 @@
 
 팀 **추락도락이다** · 신준화 · 신지환 · 이규연 · 이태민 · 전다함
 
-![Python](https://img.shields.io/badge/Python-3.11-3776AB?logo=python&logoColor=white)
-![PyTorch](https://img.shields.io/badge/PyTorch-CUDA-EE4C2C?logo=pytorch&logoColor=white)
-![CUDA](https://img.shields.io/badge/CUDA-NVRTC-76B900?logo=nvidia&logoColor=white)
-![Platform](https://img.shields.io/badge/Platform-Windows%20x64-0078D6?logo=windows&logoColor=white)
+![Python](docs/assets/badges/python.svg)
+![PyTorch](docs/assets/badges/pytorch.svg)
+![CUDA](docs/assets/badges/cuda.svg)
+![Platform](docs/assets/badges/platform.svg)
 
 </div>
 
