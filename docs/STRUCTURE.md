@@ -1,146 +1,45 @@
-# Repository and model storage
+# 코드 · 모델 저장 구조
 
-## Code layout
+## 코드
 
 ```text
-aipilot-rl/
-  cuda_fdm/           GPU environment, PPO, league, stable training CLI
-  claude_code/        checkpoint-compatible networks and observation references
-  controllers/mpc/   Release MPC source/config/native predictor/tests
-  controllers/bt/    custom BT node source overlay (original SDK required)
-  src/dogfight/       common environment contracts and geometry
-  evaluation/         tournament engine and verified policy adapters
-  submission/         inference/wire contracts and historical packaging entrypoints
-  scripts/            thin train/evaluate entrypoints
-  configs/
-    training/         portable PPO argument examples
-    evaluation/       portable examples and ignored local campaign rosters
-    models/           model registration example
-  tests/              storage and launcher tests
-  docs/               usage, design, contribution guidelines
-  research/competition_36500/  restored 184D final Main runtime + settings/byte hashes
-  third_party/competition_runtime/  explicitly allowlisted SDK subset + provenance
-  artifacts/          local-only payloads; only README is tracked
+cuda_fdm/                     GPU 환경, PPO, 리그, 학습 CLI (214D 계보)
+research/competition_36500/   최종 3-9 학습 소스와 설정·해시 기록 (184D 계보)
+claude_code/                  체크포인트 호환 네트워크, 관측·보상 정의
+controllers/mpc/              MPC 소스 · 설정 · native 예측기 · 테스트
+controllers/bt/               커스텀 BT 노드 (원본 SDK 필요)
+src/dogfight/                 공통 환경 규약, 기하 계산, UDP 인터페이스
+evaluation/                   리그전 실행기, 정책 어댑터, 테스트
+submission/                   추론 · 통신 규약, 패키징
+scripts/                      학습 · 평가 · 런타임 준비 실행기
+configs/                      학습 · 평가 · 모델 등록 예시
+third_party/                  대회 제공 런타임 일부 (출처 분리)
+tests/                        저장 구조 · 실행기 테스트
+artifacts/                    로컬 전용 (README만 Git 관리)
 ```
 
-Existing `cuda_fdm/tests` and `evaluation/test_*.py` remain at stable paths.
-Do not move the active evaluator or change imported modules mid-campaign.
-`claude_code` is a compatibility package, not a second active training engine.
+`evaluation/` 안의 `after_training.py`, `transfer_*.py`, `final_selection.py` 등은
+특정 대회 기간의 평가 기록용 스크립트입니다. 새 실험은 `tournament.py` · `native_baselines.py`에서 시작합니다.
 
-## Local artifact layout
+## 로컬 모델 저장 (`artifacts/`, Git 제외)
 
 ```text
 artifacts/models/
-  rl/
-    3-9/<run-name>/
-    headon/<run-name>/
-    common/<run-or-model-name>/
-  bt/<model-name>/                     DLL + XML pair
-  mpc/<model-name>/                    source/config/dependency snapshot
-  external/
-    inbox/<team>/<model-version>/      unreviewed teammate package
-    approved/<team>/<model-version>/   reviewed package, explicit evaluation only
-  catalog.local.json                  local provenance and verified hashes
+  rl/3-9/<run-name>/          3-9 학습 결과
+  rl/headon/<run-name>/       Head-on 학습 결과
+  rl/common/<name>/           공통 기준 모델
+  bt/<name>/                  BT DLL + XML
+  mpc/<name>/                 MPC 스냅샷
+  external/inbox|approved/    팀원 모델 (검토 전 / 검토 후)
+artifacts/evaluations/        평가 결과
+artifacts/runtimes/           격리 설치된 대회 런타임
 ```
 
-New managed training runs store `checkpoint.pt`, retained `iter_*.pt`,
-`training.csv` and `league/` under the scenario/run directory.
-`three_nine` maps to directory `3-9`; `headon` maps to `headon`; training
-scenario `mixed` maps to `common`. `common` is also where shared benchmark
-models such as original20k and submission4499 are stored. It does not imply
-that the current separate leagues use mixed initial conditions.
+`scripts/train.py`로 시작한 학습은 `artifacts/models/rl/<시나리오>/<run-name>/`에
+`checkpoint.pt`, `iter_*.pt`, `training.csv`, `league/`를 저장합니다.
+비어 있지 않은 run 폴더는 `--resume` 없이 덮어쓰지 않습니다.
 
-On 2026-09-11, verified copies of 58 RL models, six BT packages, and one
-ROM NMPC snapshot were placed here. The RL payloads occupy approximately
-6.31 GB (decimal). Source models, complete training checkpoints and original
-archive locations remain unchanged. Local `catalog.local.json` records paths
-and hashes; MPC has a tree digest over sorted `relative_path:SHA256` lines.
-The MPC copy excludes archives, caches and build intermediates; external
-dependencies and GPU inference are NOT validated.
+## 외부 모델
 
-Imported snapshots under `completed_70k`, `completed_20k_resume` and
-`legacy20k_obs214` are evaluation storage, not freshly relocated training runs.
-Their embedded archive paths may refer to the preserved original directories.
-Do not resume them as portable, self-contained runs. Resume historical training
-using its original paths and explicit `cuda_fdm.train_gpu` invocation.
-
-## Managed training
-
-Run from the repository root. This launcher changes paths only, not PPO values:
-
-```powershell
-python scripts/train.py --scenario three_nine --run-name experiment01 --dry-run -- --iters 20000 --rollout 64
-python scripts/train.py --scenario headon --run-name experiment02 --config configs/training/minimal.example.json --dry-run
-```
-
-Inspect the printed command and remove `--dry-run` to actually train.
-The example config is illustrative, NOT the completed competition schedule.
-Forward any intended reward/LR/exploiter settings after `--` or in the config's
-`arguments` array. Existing nonempty run directories require `--resume`:
-
-```powershell
-python scripts/train.py --scenario headon --run-name experiment02 --resume --config configs/training/minimal.example.json
-```
-
-Keep the same run settings when resuming. The trainer still validates checkpoint
-scenario, reward and schedule contracts. Managed path overrides are refused;
-the legacy CLI remains available for old runs with custom paths.
-
-## Evaluation
-
-```powershell
-python scripts/evaluate.py --spec configs/evaluation/three_nine.local.json --output artifacts/evaluations/three_nine --validate-only
-python scripts/evaluate.py --spec configs/evaluation/headon.local.json --output artifacts/evaluations/headon --validate-only
-```
-
-Remove `--validate-only` to run. Local rosters use the copied model paths and
-are intentionally ignored by Git. They contain 27 scenario-specific models,
-original20k 15000/17500/20000, and submission4499: 31 entrants each.
-The only shared entrants between the two rosters are those four baselines.
-Do not replace an existing result manifest with one using different paths.
-These are historical roster examples, not a current campaign instruction.
-Original league paths and output directories remain unchanged.
-
-See [evaluation protocol](../evaluation/README.md) for deterministic action,
-mirrored games, 5539m Head-on distance and restart semantics.
-
-## External models and baselines
-
-Store teammate code and weights together under `external/inbox`, not inside
-`src`, `cuda_fdm` or a directory on PYTHONPATH. Record ownership, source/version,
-license/sharing permission, hashes, observation/action definitions, recurrent
-state/reset rules, dependencies and desired scenario in a package manifest.
-Do not execute install scripts or deserialize unknown pickle/PT files merely
-to inspect a package. Untrusted PyTorch/pickle files can execute code.
-
-After review, place the package in `approved` and explicitly select a verified
-adapter and evaluation roster. Moving a folder alone does not certify it.
-The GPU tournament accepts compatible checkpoints, the legacy184 bundle adapter
-and the reviewed external actor adapter. Native BT/MPC opponents use the CPU
-evaluation path and separately supplied runtime assets. Registration alone never
-starts execution. See evaluation/NATIVE_BASELINES.md for the native contract.
-
-Controller source lives under `controllers/`; `artifacts/models/mpc` and
-`artifacts/models/bt` remain local payload/snapshot storage. This distinction
-keeps native binaries and private experiment data out of Git while retaining
-reviewable control code. See [provenance](PROVENANCE.md).
-
-## Restored final Main and the SDK exception (2026-10-28)
-
-The root training modules retain their previous 214D contract. The final 184D
-Main lineage is explicitly selected with `scripts/train.py --runtime
-competition36500`. Its historical source is not copied into the root module
-names. See [paper/code audit](PAPER_CODE_AUDIT.md).
-
-Only three named DLL paths under `third_party/competition_runtime/win64` are
-trackable. All other binaries and local artifacts remain ignored. Preparation
-copies the verified subset to `artifacts/runtimes/competition`, never onto an
-existing evaluation runtime. Source/wrapper copies keep their original bytes.
-
-## Validation
-
-```powershell
-python -m unittest discover -s tests
-python -m unittest discover -s evaluation -p "test_*.py"
-python -m cuda_fdm.tests.vnext_cpu_suite
-```
+팀원 모델은 코드와 가중치를 함께 `external/inbox`에 두고, 출처 · 해시 · 관측/행동 정의를 기록한 뒤
+검토를 거쳐 `approved`로 옮깁니다. 신뢰할 수 없는 PyTorch/pickle 파일은 열람 목적이라도 로드하지 않습니다.
